@@ -1,0 +1,80 @@
+_define_dup_escaped_method
+_kmat_rand_b
+_kmat_rand_d
+_kmat_rand_i
+_kmat_rand_v
+_kmat_rand_z
+abs
+all_p all?
+any_p any?
+conj
+deep_freeze
+DEFAULT
+DomainError
+dup
+each
+exclude_end_p exclude_end?
+fill
+first
+imag
+inspect
+iv_kmat_stored @kmat_stored
+iv_kmat_stored_value @kmat_stored_value
+hypot
+join
+last
+near_p near?
+new
+op_comp <=>
+op_div /
+op_eq ==
+op_ge >=
+op_gt >
+op_le <=
+op_lt <
+op_minus -
+op_mul *
+op_ne !=
+op_percent %
+op_plus +
+op_pow **
+op_uminus -@
+quo
+rand
+real
+to_c
+to_s
+to_sym
+
+sin
+cos
+tan
+asin
+acos
+atan
+sinh
+cosh
+tanh
+asinh
+acosh
+atanh
+exp
+log
+sqrt
+exp2
+expm1
+log10
+log1p
+log2
+logb
+cbrt
+erf
+erfc
+lgamma
+tgamma
+ceil
+floor
+round
+trunc
+sign
+arg
