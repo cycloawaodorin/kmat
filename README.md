@@ -214,7 +214,7 @@ Kmat is free software: you can redistribute it and/or modify it under the terms 
 
 Kmat is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with the gem; see the file GPL.md. If not, see the website of [GPL](https://www.gnu.org/licenses/).
+You should have received a copy of the GNU General Public License along with the gem; see the file LICENSE.md. If not, see the website of [GPL](https://www.gnu.org/licenses/).
 
 ## `/ext/lapack_headers/*.h`
 The header files under `/ext/lapack_headers/` directory are modified or copied version of an Azalea Clive's product or Intel Corp's products. The original versions are distributed at the following.
