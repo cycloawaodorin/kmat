@@ -1,0 +1,3 @@
+/ext/kmat/lapack_headers/* linguist-vendored
+/bin/* linguist-vendored
+*.md linguist-documentation
