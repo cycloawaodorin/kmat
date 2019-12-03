@@ -851,6 +851,76 @@ kmm_mat_svd(VALUE self)
 	return rb_ary_new3(3, vu, vs, vv);
 }
 
+// symmetrize keeping AA' identical, where `self' is A.
+// this is using singular vale decompsition A=USV' and returns USU'.
+struct km_svd_symmetrize_arg {
+	SMAT *sa;
+	double *work, *u, *s, *vt;
+	int *iwork;
+	LAWORK a;
+};
+VALUE km_svd_symmetrize_body(VALUE data)
+{
+	struct km_svd_symmetrize_arg *a = (struct km_svd_symmetrize_arg *)data;
+	
+	int n = a->sa->m;
+	km_check_size(1, a->sa->n,n);
+	
+	double opt; int lwork=-1, info;
+	char jobz[] = "A";
+	dgesdd_(jobz, &n, &n, NULL, &n, NULL, NULL, &n, NULL, &n, &opt, &lwork, NULL, &info);
+	km_check_info_opt(info, "dgesdd");
+	lwork = (int)opt;
+	
+	KALLOCn(a->a, a->sa);
+	KALLOC(a->work, lwork);
+	KALLOC(a->iwork, 8*n);
+	KALLOC(a->s, n);
+	KALLOC(a->u, n*n);
+	KALLOC(a->vt, n*n);
+	
+	dgesdd_(jobz, &n, &n, a->a.d, &(a->a.ld), a->s, a->u, &n, a->vt, &n, a->work, &lwork, a->iwork, &info);
+	km_check_info(info, rb_eRuntimeError, "DBDSDC did not converge", "dgesvd");
+	
+	int one=1;
+	memset(a->vt, 0, sizeof(double)*(size_t)(n*n));
+	for (int i=0; i<n; i++) {
+		daxpy_(&n, a->s+i, a->u+i*n, &one, a->vt+i*n, &one);
+	}
+	char ta[] = "N";
+	char tb[] = "T";
+	double alpha = 1.0, beta=0.0;
+	dgemm_(ta, tb, &n, &n, &n, &alpha, a->vt, &n, a->u, &n, &beta, a->a.d, &(a->a.ld));
+	
+	return Qnil;
+}
+VALUE km_svd_symmetrize_ensure(VALUE data)
+{
+	struct km_svd_symmetrize_arg *a = (struct km_svd_symmetrize_arg *)data;
+	
+	ruby_xfree(a->vt);
+	ruby_xfree(a->u);
+	ruby_xfree(a->s);
+	ruby_xfree(a->iwork);
+	ruby_xfree(a->work);
+	km_copy_and_free_if_needed(a->sa, &(a->a));
+	
+	return Qnil;
+}
+VALUE
+kmm_mat_svd_symmetrize_dest(VALUE self)
+{
+	km_check_frozen(self);
+	struct km_svd_symmetrize_arg a;
+	a.sa = km_mat2smat(self);
+	km_check_double(1, a.sa);
+	km_check_finite(a.sa);
+	
+	km_ensure(km_svd_symmetrize_body, (VALUE)&a, km_svd_symmetrize_ensure, (VALUE)&a);
+	
+	return kmm_mat_symmetrize_dest(self);
+}
+
 // invoke a LU decomposition A=LU. `self' is A
 // L is a permutated lower triangular matrix and U is a upper triangular matrix
 struct km_lu_arg {

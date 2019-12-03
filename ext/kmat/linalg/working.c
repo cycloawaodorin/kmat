@@ -189,7 +189,7 @@ km_copy_from_work(SMAT *smat, void *work, int ldw)
 			} else if ( smat->trans ) {
 				const int one=1;
 				for ( int i=0; i<smat->m; i++ ) {
-					dcopy_(&(smat->n), data.dwork+i, &ldw, smat->dbody+(i+smat->ld), &one);
+					dcopy_(&(smat->n), data.dwork+i, &ldw, smat->dbody+(i*smat->ld), &one);
 				}
 			} else {
 				char str_a[] = "A";
@@ -201,7 +201,7 @@ km_copy_from_work(SMAT *smat, void *work, int ldw)
 			} else if ( smat->trans ) {
 				const int one=1;
 				for ( int i=0; i<smat->m; i++ ) {
-					zcopy_(&(smat->n), data.zwork+i, &ldw, smat->zbody+(i+smat->ld), &one);
+					zcopy_(&(smat->n), data.zwork+i, &ldw, smat->zbody+(i*smat->ld), &one);
 				}
 			} else {
 				char str_a[] = "A";

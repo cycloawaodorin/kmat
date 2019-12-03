@@ -83,4 +83,16 @@ class Mat
 	end
 	alias :stddev :std
 	alias :standard_deviation :std
+	
+	def geo_mean(arg=:all)
+		foo = self.log.mean(arg)
+		if foo.kind_of?(Mat)
+			foo.exp!
+		elsif arg.kind_of?(Mat)
+			arg.exp!
+			arg[0, 0]
+		else
+			Math.exp(foo)
+		end
+	end
 end
