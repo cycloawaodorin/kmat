@@ -34,6 +34,37 @@ class Mat
 		end
 		nil
 	end
+	
+	def geo_normalize!(arg=:all)
+		self.log!
+		foo = self.mean(arg)
+		if foo.kind_of?(Mat)
+			self.sub!(self.broadcast(foo))
+		else
+			self.s_sub!()
+		end
+		self.exp!
+	end
+	def geo_normalize(arg=:all)
+		self.dup.geo_normalize!(arg)
+	end
+	def normalize!
+		if self.vector?
+			self.s_div!(self.normf)
+		elsif self.square?
+			ev = self.eigen_values
+			if ev[0] < 0
+				self.diag.s_add!(ev[0]*(-2))
+				ev.s_add!(ev[0]*(-2))
+			end
+			self.s_div!(Math.exp(ev.log!.mean))
+		else
+			raise MismatchedDimensionError, "normalize is available only for vectors or square matricies"
+		end
+	end
+	def normalize
+		self.dup.normalize!
+	end
 end
 
 class Array
