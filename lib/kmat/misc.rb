@@ -41,7 +41,7 @@ class Mat
 		if foo.kind_of?(Mat)
 			self.sub!(self.broadcast(foo))
 		else
-			self.s_sub!()
+			self.s_sub!(foo)
 		end
 		self.exp!
 	end
