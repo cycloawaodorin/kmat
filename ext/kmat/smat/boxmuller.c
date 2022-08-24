@@ -66,7 +66,7 @@ km_random_randn(int argc, VALUE *argv, VALUE random)
 void
 km_Mat_rand_init(void)
 {
-	kmgv_mat_random = rb_const_get(rb_cRandom, id_DEFAULT);
+	kmgv_mat_random = rb_funcall(rb_cRandom, id_new, 0);
 	rb_define_variable("$MatRandom", &kmgv_mat_random);
 	rb_define_method(rb_cRandom, "randn", km_random_randn, -1);
 }
