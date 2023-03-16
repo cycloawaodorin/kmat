@@ -71,61 +71,61 @@ km_sum_all_v(VALUE *ent, void *data)
 	*ret = rb_funcall(*ret, id_op_plus, 1, *ent);
 }
 void
-km_sum_col_d(double *ent, int i, int j, void *data)
+km_sum_col_d(double *ent, size_t i, size_t j, void *data)
 {
 	double *r = (double *)data;
 	r[j] += *ent;
 }
 void
-km_sum_col_z(COMPLEX *ent, int i, int j, void *data)
+km_sum_col_z(COMPLEX *ent, size_t i, size_t j, void *data)
 {
 	COMPLEX *r = (COMPLEX *)data;
 	r[j] += *ent;
 }
 void
-km_sum_col_i(int *ent, int i, int j, void *data)
+km_sum_col_i(int *ent, size_t i, size_t j, void *data)
 {
 	int *r = (int *)data;
 	r[j] += *ent;
 }
 void
-km_sum_col_b(bool *ent, int i, int j, void *data)
+km_sum_col_b(bool *ent, size_t i, size_t j, void *data)
 {
 	bool *r = (bool *)data;
 	r[j] = XOR(r[j], *ent);
 }
 void
-km_sum_col_v(VALUE *ent, int i, int j, void *data)
+km_sum_col_v(VALUE *ent, size_t i, size_t j, void *data)
 {
 	VALUE *r = (VALUE *)data;
 	r[j] = rb_funcall(r[j], id_op_plus, 1, *ent);
 }
 void
-km_sum_row_d(double *ent, int i, int j, void *data)
+km_sum_row_d(double *ent, size_t i, size_t j, void *data)
 {
 	double *r = (double *)data;
 	r[i] += *ent;
 }
 void
-km_sum_row_z(COMPLEX *ent, int i, int j, void *data)
+km_sum_row_z(COMPLEX *ent, size_t i, size_t j, void *data)
 {
 	COMPLEX *r = (COMPLEX *)data;
 	r[i] += *ent;
 }
 void
-km_sum_row_i(int *ent, int i, int j, void *data)
+km_sum_row_i(int *ent, size_t i, size_t j, void *data)
 {
 	int *r = (int *)data;
 	r[i] += *ent;
 }
 void
-km_sum_row_b(bool *ent, int i, int j, void *data)
+km_sum_row_b(bool *ent, size_t i, size_t j, void *data)
 {
 	bool *r = (bool *)data;
 	r[i] = XOR(r[i], *ent);
 }
 void
-km_sum_row_v(VALUE *ent, int i, int j, void *data)
+km_sum_row_v(VALUE *ent, size_t i, size_t j, void *data)
 {
 	VALUE *r = (VALUE *)data;
 	r[i] = rb_funcall(r[i], id_op_plus, 1, *ent);
@@ -167,7 +167,7 @@ kmm_mat__sum(VALUE self, VALUE dest)
 	} else if ( SAME_SIZE(sr, sa) ) {
 		km_smat_copy(sr, sa);
 	} else {
-		rb_raise(km_eDim, "sum from size (%d, %d) to size (%d, %d) is not defined", sa->m, sa->n, sr->m, sr->n);
+		rb_raise(km_eDim, "sum from size (%zu, %zu) to size (%zu, %zu) is not defined", sa->m, sa->n, sr->m, sr->n);
 	}
 	return dest;
 }

@@ -37,11 +37,12 @@ km_unbal_body(VALUE data)
 	char job[]="B", side[]="R";
 	KALLOC(a->at, (a->n)*(a->n));
 	KALLOCn(a->body, a->smat);
-	dgebak_(job, side, &(a->n), &(a->ilo), &(a->ihi), a->scale, &(a->n), a->body.d, &(a->body.ld), &info); // multiply D from the left
+	int ld = s2i(a->body.ld);
+	dgebak_(job, side, &(a->n), &(a->ilo), &(a->ihi), a->scale, &(a->n), a->body.d, &ld, &info); // multiply D from the left
 	km_check_info(info, rb_eRuntimeError, "unexpected info value", "dgebak");
-	a->sat = km_smat_alloc_with(a->n, a->n, VT_DOUBLE, a->body.body);
+	a->sat = km_smat_alloc_with(i2s(a->n), i2s(a->n), VT_DOUBLE, a->body.body);
 	a->sat->trans = true;
-	km_copy2work(a->at, a->n, a->sat); // take transpose
+	km_copy2work(a->at, i2s(a->n), a->sat); // take transpose
 	side[0] = 'L';
 	dgebak_(job, side, &(a->n), &(a->ilo), &(a->ihi), a->scale, &(a->n), a->at, &(a->n), &info); // multiply D^(-T) from the left
 	km_check_info(info, rb_eRuntimeError, "unexpected info value", "dgebak");
@@ -63,16 +64,16 @@ km_unbal_ensure(VALUE data)
 static void
 km_unbal(SMAT *smat, double *scale, int ilo, int ihi)
 {
-	struct km_unbal_arg a = {smat, scale, ilo, ihi, smat->m, {{NULL}, 0, false}, NULL, NULL};
+	struct km_unbal_arg a = {smat, scale, ilo, ihi, s2i(smat->m), {{NULL}, 0, false}, NULL, NULL};
 	
 	km_ensure(km_unbal_body, (VALUE)(&a), km_unbal_ensure, (VALUE)(&a));
 }
 
 static void
-km_check_finite_func_d(double *ent, int i, int j, void *null)
+km_check_finite_func_d(double *ent, size_t i, size_t j, void *null)
 {
 	if ( !isfinite(*ent) ) {
-		rb_raise(km_eUncomp, "the matrix has an illegal (infinite or nan) element at (%d, %d)", i, j);
+		rb_raise(km_eUncomp, "the matrix has an illegal (infinite or nan) element at (%zu, %zu)", i, j);
 	}
 }
 static inline void
@@ -98,8 +99,8 @@ km_dmat_solve_body(VALUE data)
 {
 	struct km_dmat_solve_arg *a = (struct km_dmat_solve_arg *)data;
 	
-	int n=a->sx->m, nrhs=a->sx->n;
-	km_check_size(4, a->sa->m,n, a->sa->n,n, a->sb->m,n, a->sb->n,nrhs);
+	int n=s2i(a->sx->m), nrhs=s2i(a->sx->n);
+	km_check_size(4, s2i(a->sa->m),n, s2i(a->sa->n),n, s2i(a->sb->m),n, s2i(a->sb->n),nrhs);
 	
 	int info;
 	char equed[2];
@@ -117,9 +118,10 @@ km_dmat_solve_body(VALUE data)
 	KALLOC(a->iwork, n);
 	KALLOCn(a->x, a->sx);
 	double rcond;
+	int ldx=s2i(a->x.ld);
 	
 	dgesvx_(fact, trans, &n, &nrhs, a->a, &n, a->af, &n, a->ipiv, equed, a->r, a->c, a->b, &n,
-		a->x.d, &(a->x.ld), &rcond, a->ferr, a->berr, a->work, a->iwork, &info);
+		a->x.d, &ldx, &rcond, a->ferr, a->berr, a->work, a->iwork, &info);
 	km_check_info(info, km_eUncomp, "A is singular or near singular", "dgesvx");
 	
 	return Qnil;
@@ -165,9 +167,9 @@ km_dmat_inverse(VALUE self, VALUE va)
 	SMAT *sx = km_mat2smat(self), *sa = km_mat2smat(va);
 	km_check_double(2, sx, sa);
 	km_check_finite(sa);
-	int n = sa->m;
-	km_check_size(3, sx->m,n, sx->n,n, sa->n,n);
-	return km_dmat_solve(self, va, kmm_Mat_identity(km_cMat, INT2NUM(n)));
+	size_t n = sa->m;
+	km_check_size_s(3, sx->m,n, sx->n,n, sa->n,n);
+	return km_dmat_solve(self, va, kmm_Mat_identity(km_cMat, ZU2NUM(n)));
 }
 
 // compute X with the smallest norm which minimize ||AX-B||. `self' is output
@@ -180,9 +182,9 @@ static VALUE
 km_mat_ls_body(VALUE data)
 {
 	struct km_ls_arg *a = (struct km_ls_arg *)data;
-	int m=a->sa->m, n=a->sa->n, nrhs=a->sx->n;
+	int m=s2i(a->sa->m), n=s2i(a->sa->n), nrhs=s2i(a->sx->n);
 	int ldb = MAX(m, n);
-	km_check_size(3, a->sx->m,n, a->sb->m,m, a->sb->n,nrhs);
+	km_check_size(3, s2i(a->sx->m),n, s2i(a->sb->m),m, s2i(a->sb->n),nrhs);
 	
 	int rank, lwork=-1, liwork, info;
 	double rcond=-1.0, opt;
@@ -191,13 +193,13 @@ km_mat_ls_body(VALUE data)
 	lwork = (int)opt;
 	KALLOCc(a->a, a->sa);
 	KALLOC(a->b, ldb*nrhs); // don't use KALLOCc becaus ldb can be greater than sb->m
-	km_copy2work(a->b, ldb, a->sb);
+	km_copy2work(a->b, i2s(ldb), a->sb);
 	KALLOC(a->s, MIN(m, n));
 	KALLOC(a->work, lwork);
 	KALLOC(a->iwork, liwork);
 	dgelsd_(&m, &n, &nrhs, a->a, &m, a->b, &ldb, a->s, &rcond, &rank, a->work, &lwork, a->iwork, &info);
 	km_check_info(info, rb_eRuntimeError, "compution the SVD faild to converge", "dgelsd");
-	km_copy_from_work(a->sx, a->b, ldb);
+	km_copy_from_work(a->sx, a->b, i2s(ldb));
 	
 	return Qnil;
 }
@@ -239,8 +241,8 @@ VALUE
 kmm_mat_tls_destl(VALUE self, VALUE va, VALUE vb)
 {
 	SMAT *sa = km_mat2smat(va), *sb = km_mat2smat(vb);
-	sa->trans = !(sa->trans); SWAP(int, sa->m, sa->n);
-	sb->trans = !(sb->trans); SWAP(int, sb->m, sb->n);
+	sa->trans = !(sa->trans); SWAP(size_t, sa->m, sa->n);
+	sb->trans = !(sb->trans); SWAP(size_t, sb->m, sb->n);
 	VALUE vab = rb_ary_new3(2, va, vb);
 	km_ensure(km_mat_ls_wrap, rb_ary_new3(3, self, va, vb), km_recover_trans, vab);
 	return self;
@@ -264,7 +266,7 @@ km_mat_ls_conj_body(VALUE data)
 {
 	struct km_ls_conj_arg *a = (struct km_ls_conj_arg *)data;
 	
-	int m = a->sa->m, n = a->sa->n;
+	int m = s2i(a->sa->m), n = s2i(a->sa->n);
 	if ( m < n ) {
 		rb_raise(km_eDim, "A must be row-full-rank");
 	}
@@ -363,11 +365,11 @@ km_mat_glm_body(VALUE data)
 {
 	struct km_glm_arg *a = (struct km_glm_arg *)data;
 	
-	int n=a->sa->m, m=a->sa->n, p=a->sb->n; // m, n are swapped from those of sa
+	int n=s2i(a->sa->m), m=s2i(a->sa->n), p=s2i(a->sb->n); // m, n are swapped from those of sa
 	if ( n < m || m+p < n ) {
 		rb_raise(km_eDim, "m <= n <= m+p must be satisfied for glm, given are (m, n, p) = (%d, %d, %d)", m, n, p);
 	}
-	km_check_size(5, a->sb->m,n, MIN(a->sx->m,a->sx->n),1, LENGTH(a->sx),m, MIN(a->sd->m, a->sd->n),1, LENGTH(a->sd),n);
+	km_check_size(5, s2i(a->sb->m),n, s2i(MIN(a->sx->m,a->sx->n)),1, LENGTHi(a->sx),m, s2i(MIN(a->sd->m, a->sd->n)),1, LENGTHi(a->sd),n);
 	
 	double opt; int lwork=-1, info;
 	dggglm_(&n, &m, &p, NULL, &n, NULL, &n, NULL, NULL, NULL, &opt, &lwork, &info);
@@ -431,8 +433,8 @@ km_sym_ev_body(VALUE data)
 {
 	struct km_sym_ev_arg *a = (struct km_sym_ev_arg *)data;
 	
-	int n = LENGTH(a->sd);
-	km_check_size(3, MIN(a->sd->m, a->sd->n),1, a->sa->m,n, a->sa->n,n);
+	int n = LENGTHi(a->sd);
+	km_check_size(3, s2i(MIN(a->sd->m, a->sd->n)),1, s2i(a->sa->m),n, s2i(a->sa->n),n);
 	
 	char cmach[] = "S";
 	double abstol = dlamch_(cmach);
@@ -496,8 +498,8 @@ km_sym_evd_body(VALUE data)
 {
 	struct km_sym_evd_arg *a = (struct km_sym_evd_arg *)data;
 	
-	int n = a->sa->m;
-	km_check_size(5, a->sa->n,n, a->sv->m,n, a->sv->n,n, a->sd->m,n, a->sd->n,n);
+	int n = s2i(a->sa->m);
+	km_check_size(5, s2i(a->sa->n),n, s2i(a->sv->m),n, s2i(a->sv->n),n, s2i(a->sd->m),n, s2i(a->sd->n),n);
 	
 	char cmach[] = "S";
 	double dopt, abstol = dlamch_(cmach);
@@ -513,11 +515,12 @@ km_sym_evd_body(VALUE data)
 	KALLOC(a->iwork, liwork);
 	KALLOCz(a->w, a->sd);
 	KALLOCn(a->z, a->sv);
+	int ldz=s2i(a->z.ld);
 	
 	dsyevr_(jobz, range, upto, &n, a->a, &n, NULL, NULL, NULL, NULL, &abstol, &m,
-		a->w.d, a->z.d, &(a->z.ld), a->isuppz, a->work, &lwork, a->iwork, &liwork, &info);
+		a->w.d, a->z.d, &ldz, a->isuppz, a->work, &lwork, a->iwork, &liwork, &info);
 	km_check_info(info, rb_eRuntimeError, "internal error occured while invoking dsyevr", "dsyevr");
-	km_vec2diag(n, n, a->w.d, a->w.ld);
+	km_vec2diag(n, n, a->w.d, s2i(a->w.ld));
 	
 	return Qnil;
 }
@@ -551,7 +554,7 @@ kmm_mat_sym_evd_destl(VALUE self, VALUE vv, VALUE vd)
 VALUE
 kmm_mat_sym_evd(VALUE self)
 {
-	int n = km_mat2smat(self)->n;
+	size_t n = km_mat2smat(self)->n;
 	VALUE vv = km_Mat(n, n, VT_DOUBLE);
 	VALUE vd = km_Mat(n, n, VT_DOUBLE);
 	kmm_mat_sym_evd_destl(self, vv, vd);
@@ -564,7 +567,7 @@ struct km_ge_eigen_values_arg {
 	double *a, *wr, *wi, *scale, *work;
 };
 static void
-km_ge_ev_cpack(COMPLEX *ent, int i, int j, void *data)
+km_ge_ev_cpack(COMPLEX *ent, size_t i, size_t j, void *data)
 {
 	struct km_ge_eigen_values_arg *a = (struct km_ge_eigen_values_arg *)data;
 	*ent = cpack(a->wr[i+j], a->wr[i+j]); // i==0 for column-vector or j==0 for row-vector
@@ -574,8 +577,8 @@ km_ge_eigen_values_body(VALUE data)
 {
 	struct km_ge_eigen_values_arg *a = (struct km_ge_eigen_values_arg *)data;
 	
-	int n = LENGTH(a->sd);
-	km_check_size(3, MIN(a->sd->m, a->sd->n),1, a->sa->m,n, a->sa->n,n);
+	int n = LENGTHi(a->sd);
+	km_check_size(3, s2i(MIN(a->sd->m, a->sd->n)),1, s2i(a->sa->m),n, s2i(a->sa->n),n);
 	
 	double opt;
 	int lwork=-1, ilo, ihi, info;
@@ -641,8 +644,8 @@ km_ge_evd_body(VALUE data)
 {
 	struct km_ge_evd_arg *a = (struct km_ge_evd_arg *)data;
 	
-	int n = a->sa->m;
-	km_check_size(5, a->sa->n,n, a->sv->m,n, a->sv->n,n, a->sd->m,n, a->sd->n,n);
+	int n = s2i(a->sa->m);
+	km_check_size(5, s2i(a->sa->n),n, s2i(a->sv->m),n, s2i(a->sv->n),n, s2i(a->sd->m),n, s2i(a->sd->n),n);
 	
 	double opt; int lwork=-1, ilo, ihi, info;
 	char balanc[]="B", jobvl[]="N", jobvr[]="V", sense[]="N";
@@ -663,11 +666,11 @@ km_ge_evd_body(VALUE data)
 		&ilo, &ihi, a->scale, &abnrm, NULL, NULL, a->work, &lwork, NULL, &info);
 	km_check_info(info, rb_eRuntimeError, "the QR algorithm failed to compute all the eigenvalues", "dgeevx");
 	if ( a->sd->stype == ST_RSUB ) {
-		for ( int i=0; i<n; i++ ) {
+		for ( size_t i=0; i<i2s(n); i++ ) {
 			ENTITYr0(a->sd, z, i+i*(a->sd->ld)) = cpack(a->wr[i], a->wi[i]);
 		}
 	} else {
-		for ( int i=0; i<n; i++ ) {
+		for ( size_t i=0; i<i2s(n); i++ ) {
 			ENTITYd0(a->sd, z, i+i*(a->sd->ld)) = cpack(a->wr[i], a->wi[i]);
 		}
 	}
@@ -705,7 +708,7 @@ kmm_mat_ge_evd_destl(VALUE self, VALUE vv, VALUE vd)
 VALUE
 kmm_mat_ge_evd(VALUE self)
 {
-	int n = km_mat2smat(self)->n;
+	size_t n = km_mat2smat(self)->n;
 	VALUE vv = km_Mat(n, n, VT_DOUBLE);
 	VALUE vd = km_Mat(n, n, VT_COMPLEX);
 	kmm_mat_ge_evd_destl(self, vv, vd);
@@ -725,8 +728,8 @@ km_singular_values_body(VALUE data)
 {
 	struct km_singular_values_arg *a = (struct km_singular_values_arg *)data;
 	
-	int m = a->sa->m, n = a->sa->n;
-	km_check_size(2, LENGTH(a->ss),MIN(m, n), MIN(a->ss->m,a->ss->n),1);
+	int m = s2i(a->sa->m), n = s2i(a->sa->n);
+	km_check_size(2, LENGTHi(a->ss),MIN(m, n), s2i(MIN(a->ss->m,a->ss->n)),1);
 	
 	double opt; int lwork=-1, info;
 	char jobz[] = "N";
@@ -789,8 +792,8 @@ km_svd_body(VALUE data)
 {
 	struct km_svd_arg *a = (struct km_svd_arg *)data;
 	
-	int m = a->sa->m, n = a->sa->n;
-	km_check_size(6, a->su->m,m, a->su->n,m, a->ss->m,m, a->ss->n,n, a->sv->m,n, a->sv->n,n);
+	int m = s2i(a->sa->m), n = s2i(a->sa->n);
+	km_check_size(6, s2i(a->su->m),m, s2i(a->su->n),m, s2i(a->ss->m),m, s2i(a->ss->n),n, s2i(a->sv->m),n, s2i(a->sv->n),n);
 	
 	double opt; int lwork=-1, info;
 	char jobz[] = "A";
@@ -804,10 +807,11 @@ km_svd_body(VALUE data)
 	KALLOCz(a->s, a->ss);
 	KALLOCn(a->u, a->su);
 	KALLOCn(a->vt, a->sv);
+	int ldu=s2i(a->u.ld), ldvt=s2i(a->vt.ld);
 	
-	dgesdd_(jobz, &m, &n, a->a, &m, a->s.d, a->u.d, &(a->u.ld), a->vt.d, &(a->vt.ld), a->work, &lwork, a->iwork, &info);
+	dgesdd_(jobz, &m, &n, a->a, &m, a->s.d, a->u.d, &ldu, a->vt.d, &ldvt, a->work, &lwork, a->iwork, &info);
 	km_check_info(info, rb_eRuntimeError, "DBDSDC did not converge", "dgesvd");
-	km_vec2diag(m, n, a->s.d, a->s.ld);
+	km_vec2diag(m, n, a->s.d, s2i(a->s.ld));
 	
 	return Qnil;
 }
@@ -843,7 +847,7 @@ VALUE
 kmm_mat_svd(VALUE self)
 {
 	SMAT *sa = km_mat2smat(self);
-	int m = sa->m, n = sa->n;
+	size_t m = sa->m, n = sa->n;
 	VALUE vu = km_Mat(m, m, VT_DOUBLE);
 	VALUE vs = km_Mat(m, n, VT_DOUBLE);
 	VALUE vv = km_Mat(n, n, VT_DOUBLE);
@@ -863,8 +867,8 @@ VALUE km_svd_symmetrize_body(VALUE data)
 {
 	struct km_svd_symmetrize_arg *a = (struct km_svd_symmetrize_arg *)data;
 	
-	int n = a->sa->m;
-	km_check_size(1, a->sa->n,n);
+	int n = s2i(a->sa->m);
+	km_check_size(1, s2i(a->sa->n),n);
 	
 	double opt; int lwork=-1, info;
 	char jobz[] = "A";
@@ -878,8 +882,9 @@ VALUE km_svd_symmetrize_body(VALUE data)
 	KALLOC(a->s, n);
 	KALLOC(a->u, n*n);
 	KALLOC(a->vt, n*n);
+	int lda = s2i(a->a.ld);
 	
-	dgesdd_(jobz, &n, &n, a->a.d, &(a->a.ld), a->s, a->u, &n, a->vt, &n, a->work, &lwork, a->iwork, &info);
+	dgesdd_(jobz, &n, &n, a->a.d, &lda, a->s, a->u, &n, a->vt, &n, a->work, &lwork, a->iwork, &info);
 	km_check_info(info, rb_eRuntimeError, "DBDSDC did not converge", "dgesvd");
 	
 	int one=1;
@@ -890,7 +895,7 @@ VALUE km_svd_symmetrize_body(VALUE data)
 	char ta[] = "N";
 	char tb[] = "T";
 	double alpha = 1.0, beta=0.0;
-	dgemm_(ta, tb, &n, &n, &n, &alpha, a->vt, &n, a->u, &n, &beta, a->a.d, &(a->a.ld));
+	dgemm_(ta, tb, &n, &n, &n, &alpha, a->vt, &n, a->u, &n, &beta, a->a.d, &lda);
 	
 	return Qnil;
 }
@@ -934,9 +939,9 @@ km_lu_body(VALUE data)
 {
 	struct km_lu_arg *a = (struct km_lu_arg *)data;
 	
-	int m = a->sa->m, n = a->sa->n;
+	int m = s2i(a->sa->m), n = s2i(a->sa->n);
 	int k = MIN(m, n);
-	km_check_size(4, a->spl->m,m, a->spl->n,k, a->su->m,k, a->su->n,n);
+	km_check_size(4, s2i(a->spl->m),m, s2i(a->spl->n),k, s2i(a->su->m),k, s2i(a->su->n),n);
 	
 	KALLOCc(a->a, a->sa);
 	KALLOC(a->ipiv, k);
@@ -956,18 +961,19 @@ km_lu_body(VALUE data)
 			SWAP(int, (a->perm)[i], (a->perm)[s]);
 		}
 	}
+	const int ldpl=s2i(a->pl.ld), ldu = s2i(a->u.ld);
 	for ( int i=0; i<k; i++ ) {
 		int s = (a->perm)[i];
-		dcopy_(&i, (a->a)+i, &m, (a->pl.d)+s, &(a->pl.ld));
-		(a->pl.d)[s+i*(a->pl.ld)] = 1.0;
+		dcopy_(&i, (a->a)+i, &m, (a->pl.d)+s, &ldpl);
+		(a->pl.d)[s+i*ldpl] = 1.0;
 		int izero = 0, len = k-i-1; double dzero = 0.0;
-		dcopy_(&len, &dzero, &izero, (a->pl.d)+(s+(i+1)*(a->pl.ld)), &(a->pl.ld));
-		dcopy_(&i, &dzero, &izero, (a->u.d)+i, &(a->u.ld));
+		dcopy_(&len, &dzero, &izero, (a->pl.d)+(s+(i+1)*s2i(a->pl.ld)), &ldpl);
+		dcopy_(&i, &dzero, &izero, (a->u.d)+i, &ldu);
 		len = n-i;
-		dcopy_(&len, (a->a)+(i+i*m), &m, (a->u.d)+(i+i*(a->u.ld)), &(a->u.ld));
+		dcopy_(&len, (a->a)+(i+i*m), &m, (a->u.d)+(i+i*ldu), &ldu);
 	}
 	for ( int i=m; i<k; i++ ) {
-		dcopy_(&n, a->a+i, &m, (a->pl.d)+(a->perm)[i], &(a->pl.ld));
+		dcopy_(&n, a->a+i, &m, (a->pl.d)+(a->perm)[i], &ldpl);
 	}
 	
 	return Qnil;
@@ -1002,8 +1008,8 @@ VALUE
 kmm_mat_lu(VALUE self)
 {
 	SMAT *sa = km_mat2smat(self);
-	int m = sa->m, n = sa->n;
-	int k = MIN(m, n);
+	size_t m = sa->m, n = sa->n;
+	size_t k = MIN(m, n);
 	VALUE vpl = km_Mat(m, k, VT_DOUBLE);
 	VALUE vu = km_Mat(k, n, VT_DOUBLE);
 	kmm_mat_lu_destl(self, vpl, vu);
@@ -1023,9 +1029,9 @@ km_lup_body(VALUE data)
 {
 	struct km_lup_arg *a = (struct km_lup_arg *)data;
 	
-	int m = a->sa->m, n = a->sa->n;
+	int m = s2i(a->sa->m), n = s2i(a->sa->n);
 	int k = MIN(m, n);
-	km_check_size(6, a->sl->m,m, a->sl->n,k, a->su->m,k, a->su->n,n, a->sp->m,m, a->sp->n,m);
+	km_check_size(6, s2i(a->sl->m),m, s2i(a->sl->n),k, s2i(a->su->m),k, s2i(a->su->n),n, s2i(a->sp->m),m, s2i(a->sp->n),m);
 	
 	KALLOCc(a->a, a->sa);
 	KALLOC(a->ipiv, k);
@@ -1046,19 +1052,20 @@ km_lup_body(VALUE data)
 			SWAP(int, (a->perm)[i], (a->perm)[s]);
 		}
 	}
+	const int ldl = s2i(a->l.ld), ldu = s2i(a->u.ld);
 	for ( int i=0; i<k; i++ ) {
-		(a->p.d)[i+(a->perm)[i]*(a->p.ld)] = 1.0;
-		dcopy_(&i, (a->a)+i, &m, (a->l.d)+i, &(a->l.ld));
-		(a->l.d)[i+i*(a->l.ld)] = 1.0;
+		(a->p.d)[i+(a->perm)[i]*s2i(a->p.ld)] = 1.0;
+		dcopy_(&i, (a->a)+i, &m, (a->l.d)+i, &ldl);
+		(a->l.d)[i+i*ldl] = 1.0;
 		int len = k-i-1, izero = 0; double dzero = 0.0;
-		dcopy_(&len, &dzero, &izero, (a->l.d)+(i+(i+1)*(a->l.ld)), &(a->l.ld));
-		dcopy_(&i, &dzero, &izero, (a->u.d)+i, &(a->u.ld));
+		dcopy_(&len, &dzero, &izero, (a->l.d)+(i+(i+1)*ldl), &ldl);
+		dcopy_(&i, &dzero, &izero, (a->u.d)+i, &ldu);
 		len = n-i;
-		dcopy_(&len, (a->a)+(i+i*m), &m, (a->u.d)+(i+i*(a->u.ld)), &(a->u.ld));
+		dcopy_(&len, (a->a)+(i+i*m), &m, (a->u.d)+(i+i*ldu), &ldu);
 	}
 	for ( int i=m; i<k; i++ ) {
-		(a->p.d)[i+(a->perm)[i]*(a->p.ld)] = 1.0;
-		dcopy_(&n, (a->a)+i, &m, (a->l.d)+i, &(a->l.ld));
+		(a->p.d)[i+(a->perm)[i]*s2i(a->p.ld)] = 1.0;
+		dcopy_(&n, (a->a)+i, &m, (a->l.d)+i, &ldl);
 	}
 	
 	return Qnil;
@@ -1095,7 +1102,7 @@ VALUE
 kmm_mat_lup(VALUE self)
 {
 	SMAT *sa = km_mat2smat(self);
-	int m = sa->m, n = sa->n; int k = MIN(m, n);
+	size_t m = sa->m, n = sa->n; size_t k = MIN(m, n);
 	VALUE vl = km_Mat(m, k, VT_DOUBLE);
 	VALUE vu = km_Mat(k, n, VT_DOUBLE);
 	VALUE vp = km_Mat(m, m, VT_DOUBLE);
@@ -1114,8 +1121,8 @@ km_det_body(VALUE data)
 {
 	struct km_det_arg *a = (struct km_det_arg *)data;
 	
-	int n = a->sa->m;
-	km_check_size(1, a->sa->n,n);
+	int n = s2i(a->sa->m);
+	km_check_size(1, s2i(a->sa->n),n);
 	if ( n == 0 ) { return rb_float_new(1.0); }
 	
 	KALLOCc(a->a, a->sa);
@@ -1165,9 +1172,9 @@ km_qr_body(VALUE data)
 {
 	struct km_qr_arg *a = (struct km_qr_arg *)data;
 	
-	int m = a->sa->m, n = a->sa->n;
+	int m = s2i(a->sa->m), n = s2i(a->sa->n);
 	int k = MIN(m, n);
-	km_check_size(4, a->sq->m,m, a->sq->n,m, a->sr->m,m, a->sr->n,n);
+	km_check_size(4, s2i(a->sq->m),m, s2i(a->sq->n),m, s2i(a->sr->m),m, s2i(a->sr->n),n);
 	
 	double opt; int lwork=-1, info;
 	dgeqrf_(&m, &n, NULL, &m, NULL, &opt, &lwork, &info);
@@ -1187,24 +1194,25 @@ km_qr_body(VALUE data)
 	KALLOC(a->work, lwork);
 	KALLOCn(a->q, a->sq);
 	KALLOCn(a->r, a->sr);
+	int ldr=s2i(a->r.ld), ldq=s2i(a->q.ld);
 	for ( int i=m; i<k; i++ ) { // 0 clear (i>=k)-th rows of r and (i>=k)-th columns of q
 		int izero=0; double dzero=0.0;
-		dcopy_(&n, &dzero, &izero, (a->r.d)+i, &(a->r.ld));
+		dcopy_(&n, &dzero, &izero, (a->r.d)+i, &ldr);
 		int ione=1;
-		dcopy_(&m, &dzero, &izero, (a->q.d)+i*(a->q.ld), &(ione));
+		dcopy_(&m, &dzero, &izero, (a->q.d)+i*ldq, &(ione));
 	}
 	for ( int i=0; i<k; i++ ) { // copy the results of `dgeqrf' to q.d, rd, construct R and prepare to call `dorgqr'
 		int izero=0; double dzero=0.0;
-		dcopy_(&i, &dzero, &izero, (a->r.d)+i, &(a->r.ld));
+		dcopy_(&i, &dzero, &izero, (a->r.d)+i, &ldr);
 		int l = n-i;
-		dcopy_(&l, (a->a)+(i+i*m), &m, (a->r.d)+(i+i*(a->r.ld)), &(a->r).ld);
+		dcopy_(&l, (a->a)+(i+i*m), &m, (a->r.d)+(i+i*ldr), &ldr);
 		int ione = 1;
-		dcopy_(&i, &dzero, &izero, (a->q.d)+(i*(a->q.ld)), &ione);
-		(a->q.d)[i+i*(a->q.ld)] = 1.0;
+		dcopy_(&i, &dzero, &izero, (a->q.d)+(i*ldq), &ione);
+		(a->q.d)[i+i*ldq] = 1.0;
 		l = m-i-1;
-		dcopy_(&l, (a->a)+(i+i*m+1), &ione, (a->q.d)+(i+i*(a->q.ld)+1), &ione);
+		dcopy_(&l, (a->a)+(i+i*m+1), &ione, (a->q.d)+(i+i*ldq+1), &ione);
 	}
-	dorgqr_(&m, &m, &k, a->q.d, &(a->q.ld), a->tau, a->work, &lwork, &info);
+	dorgqr_(&m, &m, &k, a->q.d, &ldq, a->tau, a->work, &lwork, &info);
 	km_check_info(info, rb_eRuntimeError, "unexpected info value", "dorgqr");
 	
 	return Qnil;
@@ -1258,8 +1266,8 @@ km_rand_orth_body(VALUE data)
 {
 	struct km_rand_orth_arg *a = (struct km_rand_orth_arg *)data;
 	
-	int n = a->smat->m;
-	km_check_size(1, a->smat->n,n);
+	int n = s2i(a->smat->m);
+	km_check_size(1, s2i(a->smat->n),n);
 	
 	double opt; int lwork=-1, info;
 	dgeqrf_(&n, &n, NULL, &n, NULL, &opt, &lwork, &info);
@@ -1268,8 +1276,9 @@ km_rand_orth_body(VALUE data)
 	
 	KALLOC(a->tau, n);
 	KALLOC(a->work, lwork);
+	KALLOCn(a->a, a->smat);
 	
-	km_fill_normal(n*n, a->a.d, a->random);
+	km_fill_normal(i2s(n*n), a->a.d, a->random);
 	dgeqrf_(&n, &n, a->a.d, &n, a->tau, a->work, &lwork, &info);
 	km_check_info(info, rb_eRuntimeError, "unexpected info value", "dgeqrf");
 	ruby_xfree(a->work);
@@ -1280,14 +1289,14 @@ km_rand_orth_body(VALUE data)
 	lwork = (int)opt;
 	
 	KALLOC(a->work, lwork);
-	KALLOCn(a->a, a->smat);
+	int lda = s2i(a->a.ld);
 	
 	for (int i=0; i<n; i++ ) { // clear R to prepare to call `dorgqr'
-		int l = n-i; int izero = 0; double dzero = 0.0; int x=i+i*(a->a.ld);
-		dcopy_(&l, &dzero, &izero, (a->a.d)+x, &(a->a.ld));
+		int l = n-i; int izero = 0; double dzero = 0.0; int x=i+i*lda;
+		dcopy_(&l, &dzero, &izero, (a->a.d)+x, &lda);
 		(a->a.d)[x] = 1.0;
 	}
-	dorgqr_(&n, &n, &n, a->a.d, &(a->a.ld), a->tau, a->work, &lwork, &info);
+	dorgqr_(&n, &n, &n, a->a.d, &lda, a->tau, a->work, &lwork, &info);
 	km_check_info(info, rb_eRuntimeError, "unexpected info value", "dorgqr");
 	// multiply by scalar -1 with probability 1/2
 	if ( rb_funcall(a->random, id_rand, 1, INT2NUM(2)) == INT2NUM(0) ) {
@@ -1336,8 +1345,8 @@ km_balance_body(VALUE data)
 {
 	struct km_balance_arg *a = (struct km_balance_arg *)data;
 	
-	int n = a->sa->m;
-	km_check_size(5, a->sa->n,n, a->sd->m,n, a->sd->n,n, a->saa->m,n, a->saa->n,n);
+	int n = s2i(a->sa->m);
+	km_check_size(5, s2i(a->sa->n),n, s2i(a->sd->m),n, s2i(a->sd->n),n, s2i(a->saa->m),n, s2i(a->saa->n),n);
 	
 	KALLOC(a->scale, n);
 	KALLOC(a->perm, n);
@@ -1349,7 +1358,8 @@ km_balance_body(VALUE data)
 	
 	int ilo, ihi, info;
 	char job[] = "B";
-	dgebal_(job, &n, a->a.d, &(a->a.ld), &ilo, &ihi, a->scale, &info);
+	int lda=s2i(a->a.ld);
+	dgebal_(job, &n, a->a.d, &lda, &ilo, &ihi, a->scale, &info);
 	km_check_info(info, rb_eRuntimeError, "unexpected info value", "dgebal");
 	for ( int i=ilo-2; 0 <= i; i-- ) {
 		SWAP(int, (a->perm)[i], (a->perm)[(int)((a->scale)[i])-1]);
@@ -1359,9 +1369,9 @@ km_balance_body(VALUE data)
 	}
 	for ( int i=0; i<n; i++ ) {
 		if ( i < ilo-1 || ihi <= i ) { // permutation
-			(a->d.d)[(a->perm)[i]+i*(a->d.ld)] = 1.0;
+			(a->d.d)[(a->perm)[i]+i*s2i(a->d.ld)] = 1.0;
 		} else {
-			(a->d.d)[(a->perm)[i]+i*(a->d.ld)] = (a->scale)[i];
+			(a->d.d)[(a->perm)[i]+i*s2i(a->d.ld)] = (a->scale)[i];
 		}
 	}
 	
@@ -1395,7 +1405,7 @@ kmm_mat_balance_destl(VALUE self, VALUE vd, VALUE vaa)
 VALUE
 kmm_mat_balance(VALUE self)
 {
-	int n = km_mat2smat(self)->m;
+	size_t n = km_mat2smat(self)->m;
 	VALUE vd = km_Mat(n, n, VT_DOUBLE);
 	VALUE vaa = km_Mat(n, n, VT_DOUBLE);
 	kmm_mat_balance_destl(self, vd, vaa);
@@ -1418,23 +1428,24 @@ km_expm_body(VALUE data)
 {
 	struct km_expm_arg *a = (struct km_expm_arg *)data;
 	
-	int n = a->sa->m; int n2 = n*n;
-	km_check_size(1, a->sa->n,n);
+	int n = s2i(a->sa->m); int n2 = n*n;
+	km_check_size(1, s2i(a->sa->n),n);
 	
 	// trace reduction
 	double neg_max = -DBL_MAX;
 	KALLOCn(a->a, a->sa);
+	int lda=s2i(a->a.ld);
 	for ( int i=0; i<n; i++ ) { for ( int j=0; j<n; j++ ) {
-		if ( (a->a.d)[i+j*(a->a.ld)] < neg_max ) { (a->a.d)[i+j*(a->a.ld)] = neg_max; }
+		if ( (a->a.d)[i+j*lda] < neg_max ) { (a->a.d)[i+j*lda] = neg_max; }
 	} }
 	double trshift = 0.0;
 	for ( int i=0; i<n; i++ ) {
-		trshift += (a->a.d)[i+i*(a->a.ld)];
+		trshift += (a->a.d)[i+i*lda];
 	}
 	if ( 0 < trshift ) {
 		trshift /= n;
 		for ( int i=0; i<n; i++ ) {
-			(a->a.d)[i+i*(a->a.ld)] -= trshift;
+			(a->a.d)[i+i*lda] -= trshift;
 		}
 	}
 	
@@ -1442,14 +1453,14 @@ km_expm_body(VALUE data)
 	int ilo, ihi, info;
 	char job[] = "B";
 	KALLOC(a->scale, n);
-	dgebal_(job, &n, a->a.d, &(a->a.ld), &ilo, &ihi, a->scale, &info);
+	dgebal_(job, &n, a->a.d, &lda, &ilo, &ihi, a->scale, &info);
 	km_check_info(info, rb_eRuntimeError, "unexpected info value", "dgebal");
 	
 	// scaling
 	int ione=1;
 	double s = 0.0;
 	for ( int i=0; i<n; i++ ) {
-		double foo = dasum_(&n, (a->a.d)+i, &(a->a.ld));
+		double foo = dasum_(&n, (a->a.d)+i, &lda);
 		if ( s < foo ) { s = foo; }
 	}
 	s = logb(s);
@@ -1460,7 +1471,7 @@ km_expm_body(VALUE data)
 	}
 	double ps = exp2(-s);
 	for ( int i=0; i<n; i++ ) {
-		dscal_(&n, &ps, (a->a.d)+(i*(a->a.ld)), &ione);
+		dscal_(&n, &ps, (a->a.d)+(i*lda), &ione);
 	}
 	
 	// Pade approximation
@@ -1472,13 +1483,13 @@ km_expm_body(VALUE data)
 	KALLOC(a->y, n2);
 	KALLOC(a->foo, n2);
 #define MPROD(_r, _a, _b) km_dmprod(n, n, n, _a, _b, _r)
-#define A a->a.d, a->a.ld
+#define A a->a.d, lda
 #define A2 a->a2, n
 #define X a->x, n
 #define Y a->y, n
 #define FOO a->foo, n
 	MPROD(A2, A, A); // a2 = a*a
-	memcpy( a->foo, a->a2, sizeof(double)*((size_t)n2) ); // foo = a2
+	memcpy( a->foo, a->a2, sizeof(double)*i2s(n2) ); // foo = a2
 	dscal_( &n2, c+7, a->foo, &ione ); // foo *= c[7]
 	for ( int i=0; i<n; i++ ) { a->foo[i*np1] += c[5]; } // foo += c[5]*I
 	MPROD(X, FOO, A2); // x = foo*a2 = a^4*c[7]+a^2*c[5]
@@ -1514,14 +1525,14 @@ km_expm_body(VALUE data)
 	char fact[]="E";
 	char trans[]="N";
 	dgesvx_(fact, trans, &n, &n, a->y, &n, a->a2, &n, a->ipiv, equed, a->r, a->c, a->x, &n,
-		a->a.d, &(a->a.ld), &alp, a->ferr, a->berr, a->work, a->iwork, &info);
+		a->a.d, &lda, &alp, a->ferr, a->berr, a->work, a->iwork, &info);
 	km_check_info(info, km_eUncomp, "an internal matrix is singular or near singular", "dgesvx");
 	
 	// undo scaling by repeated squaring
 	int is = (int)s;
 	if ( is & 1 ) { // if is is odd, then r = r^2
 		MPROD(FOO, A, A);
-		dlacpy_(job, &n, &n, a->foo, &n, a->a.d, &(a->a.ld));
+		dlacpy_(job, &n, &n, a->foo, &n, a->a.d, &lda);
 	}
 	for ( int i=0; i<is/2; i++ ) {
 		MPROD(FOO, A, A);
@@ -1587,16 +1598,17 @@ km_chol_body(VALUE data)
 {
 	struct km_chol_arg *a = (struct km_chol_arg *)data;
 	
-	int n = a->sa->m, info;
+	int n = s2i(a->sa->m), info;
 	
 	KALLOCn(a->a, a->sa);
 	char uplo[] = "U";
-	dpotrf_(uplo, &n, a->a.d, &(a->a.ld), &info);
+	int lda=s2i(a->a.ld);
+	dpotrf_(uplo, &n, a->a.d, &lda, &info);
 	km_check_info(info, km_eUncomp, "self is not positive definite", "dpotrf");
 	int ione=1, izero=0; double dzero=0.0;
 	for ( int i=0; i<n-1; i++ ) {
 		const int len=n-i-1;
-		dcopy_(&len, &dzero, &izero, (a->a.d)+(i+i*(a->a.ld)+1), &ione);
+		dcopy_(&len, &dzero, &izero, (a->a.d)+(i+i*lda+1), &ione);
 	}
 	
 	return Qnil;
@@ -1626,4 +1638,3 @@ kmm_mat_chol_dest(VALUE self)
 	
 	return self;
 }
-

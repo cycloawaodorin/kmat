@@ -1,13 +1,13 @@
 #include "../kmat.h"
 
 static VALUE
-km_block(VALUE idx, VALUE ary, VALUE self)
+km_block(RB_BLOCK_CALL_FUNC_ARGLIST(idx, ary))
 {
 	VALUE row = rb_ary_entry(ary, NUM2LONG(rb_ary_entry(idx, 0)));
 	return rb_ary_entry(row, NUM2LONG(rb_ary_entry(idx, 1)));
 }
 static VALUE
-km_block_vector(VALUE idx, VALUE ary, VALUE self)
+km_block_vector(RB_BLOCK_CALL_FUNC_ARGLIST(idx, ary))
 {
 	return rb_ary_entry(ary, NUM2LONG(rb_ary_entry(idx, 0)));
 }

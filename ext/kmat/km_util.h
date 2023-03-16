@@ -1,7 +1,25 @@
 static inline size_t
-int2size_t(int i)
+i2s(int i)
 {
 	return (size_t)i;
+}
+
+static inline int
+s2i(size_t s)
+{
+	return (int)s;
+}
+
+static inline long
+s2l(size_t s)
+{
+	return (long)s;
+}
+
+static inline size_t
+l2s(long l)
+{
+	return (size_t)l;
 }
 
 static inline void
@@ -21,11 +39,9 @@ km_infect_frozen(VALUE src, VALUE dest)
 }
 
 static inline void
-km_check_positive(int m, int n)
+km_check_size2(size_t m, size_t n)
 {
-	if ( m < 0 || n < 0 ) {
-		rb_raise(km_eDim, "matrix size must not be negative");
-	} else if ( ((long long)m)*((long long)n) != (long long)(m*n) ) {
+	if ( ((long long)m)*((long long)n) != (long long)(m*n) ) {
 		rb_raise(km_eDim, "matrix length must be within int range");
 	}
 }
@@ -37,21 +53,26 @@ km_check_positive(int m, int n)
 #define SAME(a, b) ( (a) == (b) )
 #define XOR(p, q) ( ( (p)&&(!(q)) ) || ( (!(p))&&(q) ) )
 
-#define KALLOC(val, n) val = ruby_xcalloc(int2size_t(n), sizeof(*(val)))
+#define ZU2NUM(n) ULONG2NUM(n)
+#define NUM2ZU(x) NUM2ULONG(x)
+
+#define KALLOCs(val, n) val = ruby_xcalloc(n, sizeof(*(val)))
+#define KALLOC(val, n) val = ruby_xcalloc(i2s(n), sizeof(*(val)))
 #define KALLOCc(work, smat) work = km_alloc_and_copy(smat)
 #define KALLOCn(work, smat) km_alloc_and_copy_if_needed(smat, &(work))
 #define KALLOCz(work, smat) km_alloc_if_needed_and_0clear(smat, &(work))
 
 #define INDEX(smat, i, j) ( (smat)->trans ? ((j)+(i)*(smat)->ld) : ((i)+(j)*(smat)->ld) )
+#define INDEXi(smat, i, j) s2i( (smat)->trans ? ((j)+(i)*(smat)->ld) : ((i)+(j)*(smat)->ld) )
 #define ENTITYd0(smat, id, idx) ( ((smat)->id##body)[idx] )
 #define ENTITYr0(smat, id, idx) ( *( ((smat)->id##pbody)[idx] ) )
 #define ENTITY(smat, id, i, j) ( ( (smat)->stype==ST_RSUB ) ? ENTITYr0(smat, id, INDEX(smat, i, j)) : ENTITYd0(smat, id, INDEX(smat, i, j)) )
 
+#define LENGTHi(smat) s2i( (smat)->m*(smat)->n )
 #define LENGTH(smat) ( (smat)->m*(smat)->n )
-#define LENGTHs(smat) int2size_t( (smat)->m*(smat)->n )
 #define VECTOR_P(smat) ( (smat)->m==1 || (smat)->n==1 )
 #define SAME_SIZE(sa, sb) ( ( (sa)->m==(sb)->m ) && ( (sa)->n==(sb)->n ) )
-#define CHECK_SAME_SIZE(sa, sb) do { if ( !SAME_SIZE(sa, sb) ) { rb_raise(km_eDim, "sizes must be the same, (%d, %d) != (%d, %d)", (sa)->m, (sa)->n, (sb)->m, (sb)->n); } } while (0)
+#define CHECK_SAME_SIZE(sa, sb) do { if ( !SAME_SIZE(sa, sb) ) { rb_raise(km_eDim, "sizes must be the same, (%zu, %zu) != (%zu, %zu)", (sa)->m, (sa)->n, (sb)->m, (sb)->n); } } while (0)
 
 #define VT_SWITCH(vt_, dstate, zstate, istate, bstate, vstate) do { \
 	VTYPE __vt__ = (vt_); \
@@ -69,11 +90,11 @@ void km_smat_each_z(SMAT *smat, void (*func)(COMPLEX *, void *), void *data);
 void km_smat_each_i(SMAT *smat, void (*func)(int *, void *), void *data);
 void km_smat_each_b(SMAT *smat, void (*func)(bool *, void *), void *data);
 void km_smat_each_v(SMAT *smat, void (*func)(VALUE *, void *), void *data);
-void km_smat_each_with_index_d(SMAT *smat, void (*func)(double *, int, int, void *), void *data);
-void km_smat_each_with_index_z(SMAT *smat, void (*func)(COMPLEX *, int, int, void *), void *data);
-void km_smat_each_with_index_i(SMAT *smat, void (*func)(int *, int, int, void *), void *data);
-void km_smat_each_with_index_b(SMAT *smat, void (*func)(bool *, int, int, void *), void *data);
-void km_smat_each_with_index_v(SMAT *smat, void (*func)(VALUE *, int, int, void *), void *data);
+void km_smat_each_with_index_d(SMAT *smat, void (*func)(double *, size_t, size_t, void *), void *data);
+void km_smat_each_with_index_z(SMAT *smat, void (*func)(COMPLEX *, size_t, size_t, void *), void *data);
+void km_smat_each_with_index_i(SMAT *smat, void (*func)(int *, size_t, size_t, void *), void *data);
+void km_smat_each_with_index_b(SMAT *smat, void (*func)(bool *, size_t, size_t, void *), void *data);
+void km_smat_each_with_index_v(SMAT *smat, void (*func)(VALUE *, size_t, size_t, void *), void *data);
 void km_smat_each2_d(SMAT *sa, SMAT *sb, void (*func)(double *, double *, void *), void *data);
 void km_smat_each2_z(SMAT *sa, SMAT *sb, void (*func)(COMPLEX *, COMPLEX *, void *), void *data);
 void km_smat_each2_i(SMAT *sa, SMAT *sb, void (*func)(int *, int *, void *), void *data);

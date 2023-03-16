@@ -18,6 +18,7 @@ km_mat_deep_freeze0(VALUE self)
 	if ( smat->vtype == VT_VALUE ) {
 		km_smat_each_v(smat, km_mat_deep_freeze_func, NULL);
 	}
+	rb_obj_freeze(self);
 }
 VALUE
 kmm_mat_deep_freeze(VALUE self)
@@ -204,7 +205,7 @@ kmm_mat_detach(int argc, VALUE *argv, VALUE self)
 // if `self' is a submatrix of a supermatrix, detach from the supermatrix
 // in any case, `self' is replaced by (0, 0)-matrix, and return `self'
 static VALUE
-km_kill_func(VALUE elm, VALUE nil, VALUE self)
+km_kill_func(RB_BLOCK_CALL_FUNC_ARGLIST(elm, nil))
 {
 	SMAT *ssub = km_mat2smat(elm);
 	if ( ssub->stype != ST_SSUB ) {
@@ -223,7 +224,7 @@ kmm_mat__kill(VALUE self)
 	SMAT *smat = km_mat2smat(self);
 	if ( smat->stype == ST_FULL ) {
 		VALUE list = kmm_mat_submatricies(self);
-		rb_iterate(rb_ary_each, list, km_kill_func, Qnil);
+		rb_block_call(list, id_each, 0, (VALUE *)0, km_kill_func, Qnil);
 	}
 	if ( smat->stype != ST_SSUB ) {
 		ruby_xfree(smat->body);
@@ -277,9 +278,9 @@ kmm_mat_replace(VALUE self, VALUE val)
 			if ( dest->stype != ST_SSUB ) {
 				ruby_xfree(dest->body);
 			}
-			dest->body = ruby_xcalloc(LENGTHs(src), sizeof(void*));
+			dest->body = ruby_xcalloc(LENGTH(src), sizeof(void*));
 		}
-		memcpy(dest->body, src->body, sizeof(void*)*LENGTHs(src));
+		memcpy(dest->body, src->body, sizeof(void*)*LENGTH(src));
 		dest->ld = src->ld; dest->m = src->m; dest->n = src->n;
 		dest->vtype = src->vtype; dest->stype = ST_RSUB;
 		dest->trans = src->trans;
@@ -291,11 +292,11 @@ kmm_mat_replace(VALUE self, VALUE val)
 }
 
 VALUE
-km_Mat_ssub(int i, int j, int m, int n, VALUE super)
+km_Mat_ssub(size_t i, size_t j, size_t m, size_t n, VALUE super)
 {
 	SMAT *ssup = km_mat2smat(super);
 	if ( ssup->m < i+m || ssup->n < j+n ) {
-		rb_raise(rb_eIndexError, "given index+size (%d+%d, %d+%d) is out of range (%d, %d)", i, m, j, n, ssup->m, ssup->n);
+		rb_raise(rb_eIndexError, "given index+size (%zu+%zu, %zu+%zu) is out of range (%zu, %zu)", i, m, j, n, ssup->m, ssup->n);
 	}
 	SMAT *sret;
 	if ( ssup->stype == ST_FULL ) {
@@ -318,9 +319,9 @@ km_Mat_ssub(int i, int j, int m, int n, VALUE super)
 		);
 		sret->parent = ssup->parent;
 	} else if ( ssup->stype == ST_RSUB ) {
-		int is[m]; int js[n];
-		for ( int k=0; k<m; k++ ) { is[k] = i+k; }
-		for ( int k=0; k<n; k++ ) { js[k] = j+k; }
+		int is[m], js[n];
+		for ( size_t k=0; k<m; k++ ) { is[k] = s2i(i+k); }
+		for ( size_t k=0; k<n; k++ ) { js[k] = s2i(j+k); }
 		return km_Mat_rsub1(m, n, is, js, super);
 	} else {
 		rb_raise(km_eInternal, "unknown storage type");
@@ -332,24 +333,24 @@ km_Mat_ssub(int i, int j, int m, int n, VALUE super)
 }
 
 static void
-km_rsub_check_range(SMAT *ssup, int ii, int jj)
+km_rsub_check_range(SMAT *ssup, size_t ii, size_t jj)
 {
-	if ( ii < 0 || ssup->m <= ii || jj < 0 || ssup->n <= jj ) {
-		rb_raise(rb_eIndexError, "given index (%d, %d) is out of range (%d, %d)", ii, jj, ssup->m, ssup->n);
+	if ( ssup->m <= ii || ssup->n <= jj ) {
+		rb_raise(rb_eIndexError, "given index (%zu, %zu) is out of range (%zu, %zu)", ii, jj, ssup->m, ssup->n);
 	}
 }
-#define RSUB1_LOOPr(id) for ( int i=0; i<m; i++ ) { for ( int j=0; j<n; j++ ) { \
-	km_rsub_check_range(ssup, is[i], js[j]); \
-	sret->id##pbody[i+j*m] = ssup->id##pbody[INDEX(ssup, is[i], js[j])]; \
+#define RSUB1_LOOPr(id) for ( size_t i=0; i<m; i++ ) { for ( size_t j=0; j<n; j++ ) { \
+	km_rsub_check_range(ssup, i2s(is[i]), i2s(js[j])); \
+	sret->id##pbody[i+j*m] = ssup->id##pbody[INDEX(ssup, i2s(is[i]), i2s(js[j]))]; \
 } }
-#define RSUB1_LOOP(id) for ( int i=0; i<m; i++ ) { for ( int j=0; j<n; j++ ) { \
-	km_rsub_check_range(ssup, is[i], js[j]); \
-	sret->id##pbody[i+j*m] = ssup->id##body + INDEX(ssup, is[i], js[j]); \
+#define RSUB1_LOOP(id) for ( size_t i=0; i<m; i++ ) { for ( size_t j=0; j<n; j++ ) { \
+	km_rsub_check_range(ssup, i2s(is[i]), i2s(js[j])); \
+	sret->id##pbody[i+j*m] = ssup->id##body + INDEX(ssup, i2s(is[i]), i2s(js[j])); \
 } }
 VALUE
-km_Mat_rsub1(int m, int n, int *is, int *js, VALUE super)
+km_Mat_rsub1(size_t m, size_t n, int *is, int *js, VALUE super)
 {
-	km_check_positive(m, n);
+	km_check_size2(m, n);
 	VALUE ret = km_Mat_alloc(km_cMat);
 	SMAT *ssup = km_mat2smat(super);
 	SMAT *sret = km_mat2smat(ret);
@@ -382,18 +383,18 @@ km_Mat_rsub1(int m, int n, int *is, int *js, VALUE super)
 	return ret;
 }
 
-#define RSUB2_LOOPr(id) for( int i=0; i<m; i++ ) { for ( int j=0; j<n; j++ ) { \
+#define RSUB2_LOOPr(id) for( size_t i=0; i<m; i++ ) { for ( size_t j=0; j<n; j++ ) { \
 	km_rsub_check_range(ssup, is[i+j*m], js[i+j*m]); \
 	sret->id##pbody[i+j*m] = ssup->id##pbody[INDEX(ssup, is[i+j*m], js[i+j*m])]; \
 } }
-#define RSUB2_LOOP(id) for( int i=0; i<m; i++ ) { for ( int j=0; j<n; j++ ) { \
+#define RSUB2_LOOP(id) for( size_t i=0; i<m; i++ ) { for ( size_t j=0; j<n; j++ ) { \
 	km_rsub_check_range(ssup, is[i+j*m], js[i+j*m]); \
 	sret->id##pbody[i+j*m] = ssup->id##body+INDEX(ssup, is[i+j*m], js[i+j*m]); \
 } }
 VALUE
-km_Mat_rsub2(int m, int n, int *is, int *js, VALUE super)
+km_Mat_rsub2(size_t m, size_t n, size_t *is, size_t *js, VALUE super)
 {
-	km_check_positive(m, n);
+	km_check_size2(m, n);
 	VALUE ret = km_Mat_alloc(km_cMat);
 	SMAT *ssup = km_mat2smat(super);
 	SMAT *sret = km_mat2smat(ret);

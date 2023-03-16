@@ -24,7 +24,7 @@ VALUE rb_sMath;
 static VALUE
 kmm_obj_value(VALUE self)
 {
-	return INT2NUM((int)self);
+	return LONG2NUM((long)self);
 }
 
 #include "method_definitions.c"

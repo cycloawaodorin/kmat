@@ -22,9 +22,9 @@ km_rand_normal(VALUE random)
 // replace ary[0..(len-1)] by random numbers which follow N(0, 1)
 // `random' is an instance of Random
 void
-km_fill_normal(int len, double *ary, VALUE random)
+km_fill_normal(size_t len, double *ary, VALUE random)
 {
-	int i;
+	size_t i;
 	double sqrt_m2_log_x, two_pi_y;
 	len--;
 	if (RTEST(rb_ivar_get(random, id_iv_kmat_stored))) {

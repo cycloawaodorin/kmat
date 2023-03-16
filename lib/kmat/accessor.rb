@@ -118,14 +118,14 @@ end
 
 class << Mat
 	# for example, Mat.blocks([a, b], [c, d]) returns a single matrix of [a, b; c, d]
-	def blocks(*blocks)
-		vstack(*blocks.map do |row|
+	def blocks(args)
+		vstack(*(args.map do |row|
 			hstack(*row)
-		end)
+		end))
 	end
 	
 	def vstack(*mats)
-		m, n = *mats[0].shape
+		m, n = mats[0].shape
 		1.upto(mats.size-1) do |i|
 			mat = mats[i]
 			raise MismatchedDimensionError, 'column-sizes must be the same' if mat.col_size != n
@@ -144,7 +144,7 @@ class << Mat
 	end
 	
 	def hstack(*mats)
-		m, n = *mats[0].shape
+		m, n = mats[0].shape
 		1.upto(mats.size-1) do |i|
 			mat = mats[i]
 			raise MismatchedDimensionError, 'row-sizes must be the same' if mat.row_size != m

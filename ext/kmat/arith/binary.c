@@ -37,44 +37,46 @@ kmm_mat_add_destl(VALUE self, VALUE other)
 	CHECK_SAME_SIZE(sy, sx);
 	if ( sy->vtype == VT_DOUBLE ) {
 		if ( sy->stype == ST_FULL && sx->stype == ST_FULL && sy->trans == sx->trans ) {
-			double alpha = 1.0; int len = LENGTH(sy), ione=1;
+			double alpha = 1.0; const int len = LENGTHi(sy), ione=1;
 			daxpy_(&len, &alpha, sx->dbody, &ione, sy->dbody, &ione);
 		} else if ( sy->stype != ST_RSUB && sx->stype != ST_RSUB ) {
-			double alpha = 1.0; int incy, stepy, incx, stepx;
+			double alpha = 1.0; int incy, incx; size_t stepy, stepx;
 			if ( sy->trans ) {
-				incy = sy->ld; stepy = 1;
+				incy = s2i(sy->ld); stepy = 1;
 			} else {
 				incy = 1; stepy = sy->ld;
 			}
 			if ( sx->trans ) {
-				incx = sx->ld; stepx = 1;
+				incx = s2i(sx->ld); stepx = 1;
 			} else {
 				incx = 1; stepx = sx->ld;
 			}
-			for ( int i=0; i<(sy->n); i++ ) {
-				daxpy_(&(sy->m), &alpha, (sx->dbody)+(i*stepx), &incx, (sy->dbody)+(i*stepy), &incy);
+			const int m=s2i(sy->m);
+			for ( size_t i=0; i<(sy->n); i++ ) {
+				daxpy_(&m, &alpha, (sx->dbody)+(i*stepx), &incx, (sy->dbody)+(i*stepy), &incy);
 			}
 		} else {
 			km_smat_each2_d(sy, sx, km_add_d, NULL);
 		}
 	} else if ( sy->vtype == VT_COMPLEX ) {
 		if ( sy->stype == ST_FULL && sx->stype == ST_FULL && sy->trans == sx->trans ) {
-			COMPLEX alpha = cpack(1.0, 0.0); int len = LENGTH(sy), ione=1;
+			COMPLEX alpha = cpack(1.0, 0.0); int len = LENGTHi(sy), ione=1;
 			zaxpy_(&len, &alpha, sx->zbody, &ione, sy->zbody, &ione);
 		} else if ( sy->stype != ST_RSUB && sx->stype != ST_RSUB ) {
-			COMPLEX alpha = cpack(1.0, 0.0); int incy, stepy, incx, stepx;
+			COMPLEX alpha = cpack(1.0, 0.0); int incy, incx; size_t stepy, stepx;
 			if ( sy->trans ) {
-				incy = sy->ld; stepy = 1;
+				incy = s2i(sy->ld); stepy = 1;
 			} else {
 				incy = 1; stepy = sy->ld;
 			}
 			if ( sx->trans ) {
-				incx = sx->ld; stepx = 1;
+				incx = s2i(sx->ld); stepx = 1;
 			} else {
 				incx = 1; stepx = sx->ld;
 			}
-			for ( int i=0; i<(sy->n); i++ ) {
-				zaxpy_(&(sy->m), &alpha, (sx->zbody)+(i*stepx), &incx, (sy->zbody)+(i*stepy), &incy);
+			const int m=s2i(sy->m);
+			for ( size_t i=0; i<(sy->n); i++ ) {
+				zaxpy_(&m, &alpha, (sx->zbody)+(i*stepx), &incx, (sy->zbody)+(i*stepy), &incy);
 			}
 		} else {
 			km_smat_each2_z(sy, sx, km_add_z, NULL);
@@ -122,44 +124,46 @@ kmm_mat_sub_destl(VALUE self, VALUE other)
 	CHECK_SAME_SIZE(sy, sx);
 	if ( sy->vtype == VT_DOUBLE ) {
 		if ( sy->stype == ST_FULL && sx->stype == ST_FULL && sy->trans == sx->trans ) {
-			double alpha = -1.0; int len = LENGTH(sy), ione=1;
+			double alpha = -1.0; const int len = LENGTHi(sy), ione=1;
 			daxpy_(&len, &alpha, sx->dbody, &ione, sy->dbody, &ione);
 		} else if ( sy->stype != ST_RSUB && sx->stype != ST_RSUB ) {
-			double alpha = -1.0; int incy, stepy, incx, stepx;
+			double alpha = -1.0; int incy, incx; size_t stepy, stepx;
 			if ( sy->trans ) {
-				incy = sy->ld; stepy = 1;
+				incy = s2i(sy->ld); stepy = 1;
 			} else {
 				incy = 1; stepy = sy->ld;
 			}
 			if ( sx->trans ) {
-				incx = sx->ld; stepx = 1;
+				incx = s2i(sx->ld); stepx = 1;
 			} else {
 				incx = 1; stepx = sx->ld;
 			}
-			for ( int i=0; i<(sy->n); i++ ) {
-				daxpy_(&(sy->m), &alpha, (sx->dbody)+(i*stepx), &incx, (sy->dbody)+(i*stepy), &incy);
+			const int m=s2i(sy->m);
+			for ( size_t i=0; i<(sy->n); i++ ) {
+				daxpy_(&m, &alpha, (sx->dbody)+(i*stepx), &incx, (sy->dbody)+(i*stepy), &incy);
 			}
 		} else {
 			km_smat_each2_d(sy, sx, km_sub_d, NULL);
 		}
 	} else if ( sy->vtype == VT_COMPLEX ) {
 		if ( sy->stype == ST_FULL && sx->stype == ST_FULL && sy->trans == sx->trans ) {
-			COMPLEX alpha = cpack(-1.0, 0.0); int len = LENGTH(sy), ione=1;
+			COMPLEX alpha = cpack(-1.0, 0.0); const int len = LENGTHi(sy), ione=1;
 			zaxpy_(&len, &alpha, sx->zbody, &ione, sy->zbody, &ione);
 		} else if ( sy->stype != ST_RSUB && sx->stype != ST_RSUB ) {
-			COMPLEX alpha = cpack(-1.0, 0.0); int incy, stepy, incx, stepx;
+			COMPLEX alpha = cpack(-1.0, 0.0); int incy, incx; size_t stepy, stepx;
 			if ( sy->trans ) {
-				incy = sy->ld; stepy = 1;
+				incy = s2i(sy->ld); stepy = 1;
 			} else {
 				incy = 1; stepy = sy->ld;
 			}
 			if ( sx->trans ) {
-				incx = sx->ld; stepx = 1;
+				incx = s2i(sx->ld); stepx = 1;
 			} else {
 				incx = 1; stepx = sx->ld;
 			}
-			for ( int i=0; i<(sy->n); i++ ) {
-				zaxpy_(&(sy->m), &alpha, (sx->zbody)+(i*stepx), &incx, (sy->zbody)+(i*stepy), &incy);
+			const int m=s2i(sy->m);
+			for ( size_t i=0; i<(sy->n); i++ ) {
+				zaxpy_(&m, &alpha, (sx->zbody)+(i*stepx), &incx, (sy->zbody)+(i*stepy), &incy);
 			}
 		} else {
 			km_smat_each2_z(sy, sx, km_sub_z, NULL);
@@ -319,18 +323,20 @@ kmm_mat_s_add_destl(VALUE self, VALUE vval)
 		double val = NUM2DBL(vval);
 		if ( sy->stype == ST_FULL ) {
 			double alpha=1.0;
-			int len=LENGTH(sy), ione=1, izero=0;
+			const int len=LENGTHi(sy), ione=1, izero=0;
 			daxpy_(&len, &alpha, &val, &izero, sy->dbody, &ione);
 		} else if ( sy->stype == ST_SSUB ) {
 			double alpha=1.0;
-			int ione=1, izero=0;
+			const int ione=1, izero=0;
 			if ( sy->trans ) {
-				for ( int i=0; i<(sy->m); i++ ) {
-					daxpy_(&(sy->n), &alpha, &val, &izero, (sy->dbody)+(i*(sy->ld)), &ione);
+				const int n=s2i(sy->n);
+				for ( size_t i=0; i<(sy->m); i++ ) {
+					daxpy_(&n, &alpha, &val, &izero, (sy->dbody)+(i*(sy->ld)), &ione);
 				}
 			} else {
-				for ( int i=0; i<(sy->n); i++ ) {
-					daxpy_(&(sy->m), &alpha, &val, &izero, (sy->dbody)+(i*(sy->ld)), &ione);
+				const int m=s2i(sy->m);
+				for ( size_t i=0; i<(sy->n); i++ ) {
+					daxpy_(&m, &alpha, &val, &izero, (sy->dbody)+(i*(sy->ld)), &ione);
 				}
 			}
 		} else {
@@ -340,18 +346,20 @@ kmm_mat_s_add_destl(VALUE self, VALUE vval)
 		COMPLEX val = km_v2c(vval);
 		if ( sy->stype == ST_FULL ) {
 			COMPLEX alpha=cpack(1.0, 0.0);
-			int len=LENGTH(sy), ione=1, izero=0;
+			const int len=LENGTHi(sy), ione=1, izero=0;
 			zaxpy_(&len, &alpha, &val, &izero, sy->zbody, &ione);
 		} else if ( sy->stype == ST_SSUB ) {
 			COMPLEX alpha=cpack(1.0, 0.0);
-			int ione=1, izero=0;
+			const int ione=1, izero=0;
 			if ( sy->trans ) {
-				for ( int i=0; i<(sy->m); i++ ) {
-					zaxpy_(&(sy->n), &alpha, &val, &izero, (sy->zbody)+(i*(sy->ld)), &ione);
+				const int n=s2i(sy->n);
+				for ( size_t i=0; i<(sy->m); i++ ) {
+					zaxpy_(&n, &alpha, &val, &izero, (sy->zbody)+(i*(sy->ld)), &ione);
 				}
 			} else {
-				for ( int i=0; i<(sy->n); i++ ) {
-					zaxpy_(&(sy->m), &alpha, &val, &izero, (sy->zbody)+(i*(sy->ld)), &ione);
+				const int m=s2i(sy->m);
+				for ( size_t i=0; i<(sy->n); i++ ) {
+					zaxpy_(&m, &alpha, &val, &izero, (sy->zbody)+(i*(sy->ld)), &ione);
 				}
 			}
 		} else {
@@ -404,18 +412,20 @@ kmm_mat_s_sub_destl(VALUE self, VALUE vval)
 		double val = NUM2DBL(vval);
 		if ( sy->stype == ST_FULL ) {
 			double alpha=-1.0;
-			int len=LENGTH(sy), ione=1, izero=0;
+			const int len=LENGTHi(sy), ione=1, izero=0;
 			daxpy_(&len, &alpha, &val, &izero, sy->dbody, &ione);
 		} else if ( sy->stype == ST_SSUB ) {
 			double alpha=-1.0;
-			int ione=1, izero=0;
+			const int ione=1, izero=0;
 			if ( sy->trans ) {
-				for ( int i=0; i<(sy->m); i++ ) {
-					daxpy_(&(sy->n), &alpha, &val, &izero, (sy->dbody)+(i*(sy->ld)), &ione);
+				const int n=s2i(sy->n);
+				for ( size_t i=0; i<(sy->m); i++ ) {
+					daxpy_(&n, &alpha, &val, &izero, (sy->dbody)+(i*(sy->ld)), &ione);
 				}
 			} else {
-				for ( int i=0; i<(sy->n); i++ ) {
-					daxpy_(&(sy->m), &alpha, &val, &izero, (sy->dbody)+(i*(sy->ld)), &ione);
+				const int m=s2i(sy->m);
+				for ( size_t i=0; i<(sy->n); i++ ) {
+					daxpy_(&m, &alpha, &val, &izero, (sy->dbody)+(i*(sy->ld)), &ione);
 				}
 			}
 		} else {
@@ -425,18 +435,20 @@ kmm_mat_s_sub_destl(VALUE self, VALUE vval)
 		COMPLEX val = km_v2c(vval);
 		if ( sy->stype == ST_FULL ) {
 			COMPLEX alpha=cpack(-1.0, 0.0);
-			int len=LENGTH(sy), ione=1, izero=0;
+			const int len=LENGTHi(sy), ione=1, izero=0;
 			zaxpy_(&len, &alpha, &val, &izero, sy->zbody, &ione);
 		} else if ( sy->stype == ST_SSUB ) {
 			COMPLEX alpha=cpack(-1.0, 0.0);
-			int ione=1, izero=0;
+			const int ione=1, izero=0;
 			if ( sy->trans ) {
-				for ( int i=0; i<(sy->m); i++ ) {
-					zaxpy_(&(sy->n), &alpha, &val, &izero, (sy->zbody)+(i*(sy->ld)), &ione);
+				const int n=s2i(sy->n);
+				for ( size_t i=0; i<(sy->m); i++ ) {
+					zaxpy_(&n, &alpha, &val, &izero, (sy->zbody)+(i*(sy->ld)), &ione);
 				}
 			} else {
-				for ( int i=0; i<(sy->n); i++ ) {
-					zaxpy_(&(sy->m), &alpha, &val, &izero, (sy->zbody)+(i*(sy->ld)), &ione);
+				const int m=s2i(sy->m);
+				for ( size_t i=0; i<(sy->n); i++ ) {
+					zaxpy_(&m, &alpha, &val, &izero, (sy->zbody)+(i*(sy->ld)), &ione);
 				}
 			}
 		} else {
@@ -489,17 +501,19 @@ kmm_mat_s_mul_destl(VALUE self, VALUE vval)
 	if ( sy->vtype == VT_DOUBLE ) {
 		double val = NUM2DBL(vval);
 		if ( sy->stype == ST_FULL ) {
-			int len=LENGTH(sy), ione=1;
+			const int len=LENGTHi(sy), ione=1;
 			dscal_(&len, &val, sy->dbody, &ione);
 		} else if ( sy->stype == ST_SSUB ) {
-			int ione=1;
+			const int ione=1;
 			if ( sy->trans ) {
-				for ( int i=0; i<(sy->m); i++ ) {
-					dscal_(&(sy->n), &val, (sy->dbody)+(i*(sy->ld)), &ione);
+				const int n=s2i(sy->n);
+				for ( size_t i=0; i<(sy->m); i++ ) {
+					dscal_(&n, &val, (sy->dbody)+(i*(sy->ld)), &ione);
 				}
 			} else {
-				for ( int i=0; i<(sy->n); i++ ) {
-					dscal_(&(sy->m), &val, (sy->dbody)+(i*(sy->ld)), &ione);
+				const int m=s2i(sy->m);
+				for ( size_t i=0; i<(sy->n); i++ ) {
+					dscal_(&m, &val, (sy->dbody)+(i*(sy->ld)), &ione);
 				}
 			}
 		} else {
@@ -508,17 +522,19 @@ kmm_mat_s_mul_destl(VALUE self, VALUE vval)
 	} else if ( sy->vtype == VT_COMPLEX ) {
 		COMPLEX val = km_v2c(vval);
 		if ( sy->stype == ST_FULL ) {
-			int len=LENGTH(sy), ione=1;
+			const int len=LENGTHi(sy), ione=1;
 			zscal_(&len, &val, sy->zbody, &ione);
 		} else if ( sy->stype == ST_SSUB ) {
-			int ione=1;
+			const int ione=1;
 			if ( sy->trans ) {
-				for ( int i=0; i<(sy->m); i++ ) {
-					zscal_(&(sy->n), &val, (sy->zbody)+(i*(sy->ld)), &ione);
+				const int n=s2i(sy->n);
+				for ( size_t i=0; i<(sy->m); i++ ) {
+					zscal_(&n, &val, (sy->zbody)+(i*(sy->ld)), &ione);
 				}
 			} else {
-				for ( int i=0; i<(sy->n); i++ ) {
-					zscal_(&(sy->m), &val, (sy->zbody)+(i*(sy->ld)), &ione);
+				const int m=s2i(sy->m);
+				for ( size_t i=0; i<(sy->n); i++ ) {
+					zscal_(&m, &val, (sy->zbody)+(i*(sy->ld)), &ione);
 				}
 			}
 		} else {
@@ -563,17 +579,19 @@ kmm_mat_s_div_destl(VALUE self, VALUE vval)
 		if ( val == 0.0 ) { rb_raise(rb_eZeroDivError, "divided by 0"); }
 		val = 1.0/val;
 		if ( sy->stype == ST_FULL ) {
-			int len=LENGTH(sy), ione=1;
+			const int len=LENGTHi(sy), ione=1;
 			dscal_(&len, &val, sy->dbody, &ione);
 		} else if ( sy->stype == ST_SSUB ) {
-			int ione=1;
+			const int ione=1;
 			if ( sy->trans ) {
-				for ( int i=0; i<(sy->m); i++ ) {
-					dscal_(&(sy->n), &val, (sy->dbody)+(i*(sy->ld)), &ione);
+				const int n=s2i(sy->n);
+				for ( size_t i=0; i<(sy->m); i++ ) {
+					dscal_(&n, &val, (sy->dbody)+(i*(sy->ld)), &ione);
 				}
 			} else {
-				for ( int i=0; i<(sy->n); i++ ) {
-					dscal_(&(sy->m), &val, (sy->dbody)+(i*(sy->ld)), &ione);
+				const int m=s2i(sy->m);
+				for ( size_t i=0; i<(sy->n); i++ ) {
+					dscal_(&m, &val, (sy->dbody)+(i*(sy->ld)), &ione);
 				}
 			}
 		} else {
@@ -584,17 +602,19 @@ kmm_mat_s_div_destl(VALUE self, VALUE vval)
 		if ( val == cpack(0.0, 0.0) ) { rb_raise(rb_eZeroDivError, "divided by 0"); }
 		val = cpack(1.0, 0.0)/val;
 		if ( sy->stype == ST_FULL ) {
-			int len=LENGTH(sy), ione=1;
+			const int len=LENGTHi(sy), ione=1;
 			zscal_(&len, &val, sy->zbody, &ione);
 		} else if ( sy->stype == ST_SSUB ) {
-			int ione=1;
+			const int ione=1;
 			if ( sy->trans ) {
-				for ( int i=0; i<(sy->m); i++ ) {
-					zscal_(&(sy->n), &val, (sy->zbody)+(i*(sy->ld)), &ione);
+				const int n=s2i(sy->n);
+				for ( size_t i=0; i<(sy->m); i++ ) {
+					zscal_(&n, &val, (sy->zbody)+(i*(sy->ld)), &ione);
 				}
 			} else {
-				for ( int i=0; i<(sy->n); i++ ) {
-					zscal_(&(sy->m), &val, (sy->zbody)+(i*(sy->ld)), &ione);
+				const int m=s2i(sy->m);
+				for ( size_t i=0; i<(sy->n); i++ ) {
+					zscal_(&m, &val, (sy->zbody)+(i*(sy->ld)), &ione);
 				}
 			}
 		} else {
@@ -651,22 +671,23 @@ kmm_mat_add_times_destl(VALUE self, VALUE other, VALUE valpha)
 	if ( sy->vtype == VT_DOUBLE ) {
 		double alpha = NUM2DBL(valpha);
 		if ( sy->stype == ST_FULL && sx->stype == ST_FULL && sy->trans == sx->trans ) {
-			int len = LENGTH(sy), ione=1;
+			const int len = LENGTHi(sy), ione=1;
 			daxpy_(&len, &alpha, sx->dbody, &ione, sy->dbody, &ione);
 		} else if ( sy->stype != ST_RSUB &&  sx->stype != ST_RSUB ) {
-			int incy, stepy, incx, stepx;
+			int incy, incx; size_t stepx, stepy;
 			if ( sy->trans ) {
-				incy = sy->ld; stepy = 1;
+				incy = s2i(sy->ld); stepy = 1;
 			} else {
 				incy = 1; stepy = sy->ld;
 			}
 			if ( sx->trans ) {
-				incx = sx->ld; stepx = 1;
+				incx = s2i(sx->ld); stepx = 1;
 			} else {
 				incx = 1; stepx = sx->ld;
 			}
-			for ( int i=0; i<(sy->n); i++ ) {
-				daxpy_(&(sy->m), &alpha, (sx->dbody)+(i*stepx), &incx, (sy->dbody)+(i*stepy), &incy);
+			const int m=s2i(sy->m);
+			for ( size_t i=0; i<(sy->n); i++ ) {
+				daxpy_(&m, &alpha, (sx->dbody)+(i*stepx), &incx, (sy->dbody)+(i*stepy), &incy);
 			}
 		} else {
 			km_smat_each2_d(sy, sx, km_add_times_d, (void *)&alpha);
@@ -674,22 +695,23 @@ kmm_mat_add_times_destl(VALUE self, VALUE other, VALUE valpha)
 	} else if ( sy->vtype == VT_COMPLEX ) {
 		COMPLEX alpha = km_v2c(valpha);
 		if ( sy->stype == ST_FULL && sx->stype == ST_FULL && sy->trans == sx->trans ) {
-			int len = LENGTH(sy), ione=1;
+			const int len = LENGTHi(sy), ione=1;
 			zaxpy_(&len, &alpha, sx->zbody, &ione, sy->zbody, &ione);
 		} else if ( sy->stype != ST_RSUB &&  sx->stype != ST_RSUB ) {
-			int incy, stepy, incx, stepx;
+			int incy, incx; size_t stepx, stepy;
 			if ( sy->trans ) {
-				incy = sy->ld; stepy = 1;
+				incy = s2i(sy->ld); stepy = 1;
 			} else {
 				incy = 1; stepy = sy->ld;
 			}
 			if ( sx->trans ) {
-				incx = sx->ld; stepx = 1;
+				incx = s2i(sx->ld); stepx = 1;
 			} else {
 				incx = 1; stepx = sx->ld;
 			}
-			for ( int i=0; i<(sy->n); i++ ) {
-				zaxpy_(&(sy->m), &alpha, (sx->zbody)+(i*stepx), &incx, (sy->zbody)+(i*stepy), &incy);
+			const int m=s2i(sy->m);
+			for ( size_t i=0; i<(sy->n); i++ ) {
+				zaxpy_(&m, &alpha, (sx->zbody)+(i*stepx), &incx, (sy->zbody)+(i*stepy), &incy);
 			}
 		} else {
 			km_smat_each2_z(sy, sx, km_add_times_z, (void *)&alpha);

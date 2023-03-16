@@ -12,9 +12,9 @@ km_Mat_uninitialized(int argc, VALUE *argv)
 {
 	rb_check_arity(argc, 0, 2);
 	if ( argc == 2 ) {
-		return km_Mat(NUM2INT(argv[0]), NUM2INT(argv[1]), VT_DOUBLE);
+		return km_Mat(NUM2ZU(argv[0]), NUM2ZU(argv[1]), VT_DOUBLE);
 	} else if ( argc == 1 ) {
-		return km_Mat(NUM2INT(argv[0]), 1, VT_DOUBLE);
+		return km_Mat(NUM2ZU(argv[0]), 1, VT_DOUBLE);
 	} else {
 		return km_Mat(0, 0, VT_DOUBLE);
 	}
@@ -69,9 +69,9 @@ kmm_Mat_fill(int argc, VALUE *argv, VALUE self)
 		vt = VT_VALUE;
 	}
 	if ( argc == 3 ) {
-		ret = km_Mat(NUM2INT(argv[0]), NUM2INT(argv[1]), vt);
+		ret = km_Mat(NUM2ZU(argv[0]), NUM2ZU(argv[1]), vt);
 	} else if ( argc == 2 ) {
-		ret = km_Mat(NUM2INT(argv[0]), 1, vt);
+		ret = km_Mat(NUM2ZU(argv[0]), 1, vt);
 	} else {
 		ret = km_Mat(1, 1, vt);
 	}
@@ -84,8 +84,8 @@ kmm_Mat_eye(int argc, VALUE *argv, VALUE self)
 {
 	VALUE ret = kmm_Mat_zeros(argc, argv, self);
 	SMAT *smat = km_mat2smat(ret);
-	const int n = MIN(smat->m, smat->n);
-	for ( int i=0; i<n; i++ ) {
+	const size_t n = MIN(smat->m, smat->n);
+	for ( size_t i=0; i<n; i++ ) {
 		smat->dbody[i+i*(smat->ld)] = 1.0;
 	}
 	return ret;
@@ -96,10 +96,10 @@ kmm_Mat_eye(int argc, VALUE *argv, VALUE self)
 VALUE
 kmm_Mat_identity(VALUE self, VALUE vn)
 {
-	const int n = NUM2INT(vn);
+	const size_t n = NUM2ZU(vn);
 	VALUE ret = km_Mat(n, n, VT_DOUBLE);
 	SMAT *smat = km_mat2smat(ret);
-	for ( int i=0; i<n; i++ ) {
+	for ( size_t i=0; i<n; i++ ) {
 		smat->dbody[i+i*n] = 1.0;
 	}
 	return ret;
@@ -123,28 +123,28 @@ kmm_Mat_diag(int argc, VALUE *argv, VALUE self)
 				src = km_mat2smat(vsrc);
 			}
 			if ( VECTOR_P(src) ) { // the argument is a vector
-				const int len = LENGTH(src);
+				const size_t len = LENGTH(src);
 				ret = km_Mat(len, len, VT_DOUBLE);
 				SMAT *dest = km_mat2smat(ret);
 				if ( src->stype == ST_RSUB ) {
-					for ( int i=0; i<len; i++ ) {
+					for ( size_t i=0; i<len; i++ ) {
 						dest->dbody[i+i*len] = *((src->dpbody)[i]);
 					}
 				} else {
-					for ( int i=0; i<len; i++ ) {
+					for ( size_t i=0; i<len; i++ ) {
 						dest->dbody[i+i*len] = src->dbody[i];
 					}
 				}
 			} else { // the argument is a matrix
 				ret = km_Mat(src->m, src->n, VT_DOUBLE);
 				SMAT *dest = km_mat2smat(ret);
-				const int n = MIN(src->m, src->n);
+				const size_t n = MIN(src->m, src->n);
 				if ( src->stype == ST_RSUB ) {
-					for ( int i=0; i<n; i++ ) {
+					for ( size_t i=0; i<n; i++ ) {
 						dest->dbody[i+i*(dest->ld)] = *((src->dpbody)[i+i*(src->ld)]);
 					}
 				} else {
-					for ( int i=0; i<n; i++ ) {
+					for ( size_t i=0; i<n; i++ ) {
 						dest->dbody[i+i*(dest->ld)] = src->dbody[i+i*(src->ld)];
 					}
 				}
@@ -152,10 +152,10 @@ kmm_Mat_diag(int argc, VALUE *argv, VALUE self)
 			return ret;
 		} else if ( TYPE(vsrc) == T_ARRAY ) { // the argument is an Array
 			const long len = RARRAY_LEN(argv[0]);
-			VALUE ret = km_Mat((int)len, (int)len, VT_DOUBLE);
+			VALUE ret = km_Mat((size_t)len, (size_t)len, VT_DOUBLE);
 			double *body = km_mat2smat(ret)->dbody;
 			for ( long i=0; i<len; i++ ) {
-				body[i+i*len] = NUM2DBL(rb_ary_entry(vsrc, i));
+				body[l2s(i+i*len)] = NUM2DBL(rb_ary_entry(vsrc, i));
 			}
 			return ret;
 		} else { // (1, 1)-matrix. the (0, 0)-th element is the argument
@@ -164,7 +164,7 @@ kmm_Mat_diag(int argc, VALUE *argv, VALUE self)
 			return ret;
 		}
 	} else { // k is given
-		int k = NUM2INT(argv[1]);
+		long k = NUM2LONG(argv[1]);
 		if ( rb_obj_is_kind_of(vsrc, km_cMat) ) {
 			VALUE ret;
 			SMAT *src = km_mat2smat(vsrc);
@@ -173,77 +173,77 @@ kmm_Mat_diag(int argc, VALUE *argv, VALUE self)
 				src = km_mat2smat(vsrc);
 			}
 			if ( VECTOR_P(src) ) { // the argument is a vector
-				const int len_s = LENGTH(src);
-				const int len = len_s + ABS(k);
+				const size_t len_s = LENGTH(src);
+				const size_t len = len_s + l2s(ABS(k));
 				ret = km_Mat(len, len, VT_DOUBLE);
 				SMAT *dest = km_mat2smat(ret);
 				if ( 0 < k ) {
 					if ( src->stype == ST_RSUB ) {
-						for ( int i=0; i<len_s; i++ ) {
-							dest->dbody[i+(i+k)*len] = *((src->dpbody)[i]);
+						for ( size_t i=0; i<len_s; i++ ) {
+							dest->dbody[i+(i+l2s(k))*len] = *((src->dpbody)[i]);
 						}
 					} else {
-						for ( int i=0; i<len_s; i++ ) {
-							dest->dbody[i+(i+k)*len] = src->dbody[i];
+						for ( size_t i=0; i<len_s; i++ ) {
+							dest->dbody[i+(i+l2s(k))*len] = src->dbody[i];
 						}
 					}
 				} else {
 					if ( src->stype == ST_RSUB ) {
-						for ( int i=0; i<len_s; i++ ) {
-							dest->dbody[(i-k)+i*len] = *((src->dpbody)[i]);
+						for ( size_t i=0; i<len_s; i++ ) {
+							dest->dbody[(i+l2s(-k))+i*len] = *((src->dpbody)[i]);
 						}
 					} else {
-						for ( int i=0; i<len_s; i++ ) {
-							dest->dbody[(i-k)+i*len] = src->dbody[i];
+						for ( size_t i=0; i<len_s; i++ ) {
+							dest->dbody[(i+l2s(-k))+i*len] = src->dbody[i];
 						}
 					}
 				}
 			} else { // the argument is a matrix
 				ret = km_Mat(src->m, src->n, VT_DOUBLE);
 				SMAT *dest = km_mat2smat(ret);
-				int len, i_s, j_s;
+				size_t len, i_s, j_s;
 				if ( 0 < k ) {
-					if ( k < (src->n)-(src->m) ) {
+					if ( k < s2l(src->n)-s2l(src->m) ) {
 						len = src->m;
 					} else {
-						len = src->n-k;
+						len = src->n+l2s(-k);
 					}
-					i_s = 0; j_s = k;
+					i_s = 0; j_s = l2s(k);
 				} else {
-					if ( k < (src->n)-(src->m) ) {
-						len = src->m+k;
+					if ( k < s2l(src->n)-s2l(src->m) ) {
+						len = src->m+l2s(k);
 					} else {
 						len = src->n;
 					}
-					i_s = -k; j_s = 0;
+					i_s = l2s(-k); j_s = 0;
 				}
-				for ( int i=0; i<len; i++ ) {
+				for ( size_t i=0; i<len; i++ ) {
 					dest->dbody[i_s+i+(j_s+i)*(dest->ld)] = ENTITY(src, d, i_s+i, j_s+i);
 				}
 			}
 			return ret;
 		} else if ( TYPE(vsrc) == T_ARRAY ) { // the argument is an Array
 			const long len_s = RARRAY_LEN(argv[0]);
-			int len = ((int)len_s)+ABS(k);
+			size_t len = l2s(len_s+ABS(k));
 			VALUE ret = km_Mat(len, len, VT_DOUBLE);
 			double *body = km_mat2smat(ret)->dbody;
 			if ( 0 < k ) {
 				for ( long i=0; i<len_s; i++ ) {
-					body[i+(i+k)*len] = NUM2DBL(rb_ary_entry(vsrc, i));
+					body[l2s(i)+l2s(i+k)*len] = NUM2DBL(rb_ary_entry(vsrc, i));
 				}
 			} else {
 				for ( long i=0; i<len_s; i++ ) {
-					body[i-k+i*len] = NUM2DBL(rb_ary_entry(vsrc, i));
+					body[l2s(i-k)+l2s(i)*len] = NUM2DBL(rb_ary_entry(vsrc, i));
 				}
 			}
 			return ret;
 		} else { // (1+abs(k), 1+abs(k))-matrix. the (0, k)-th element (0<k) or (-k, 0)-th element (k<0) is the argument
-			const int len = 1+ABS(k);
+			const size_t len = l2s(1+ABS(k));
 			VALUE ret = km_Mat(len, len, VT_DOUBLE);
 			if ( 0 < k ) {
-				km_mat2smat(ret)->dbody[k*len] = NUM2DBL(vsrc);
+				km_mat2smat(ret)->dbody[l2s(k)*len] = NUM2DBL(vsrc);
 			} else {
-				km_mat2smat(ret)->dbody[-k] = NUM2DBL(vsrc);
+				km_mat2smat(ret)->dbody[l2s(-k)] = NUM2DBL(vsrc);
 			}
 			return ret;
 		}
@@ -254,10 +254,10 @@ kmm_Mat_diag(int argc, VALUE *argv, VALUE self)
 VALUE
 kmm_Mat_range(VALUE self, VALUE vn)
 {
-	const int n = NUM2INT(vn);
+	const size_t n = NUM2ZU(vn);
 	VALUE ret = km_Mat(n, 1, VT_DOUBLE);
 	double *body = km_mat2smat(ret)->dbody;
-	for ( int i=0; i<n; i++ ) {
+	for ( size_t i=0; i<n; i++ ) {
 		body[i] = (double)i;
 	}
 	return ret;
@@ -265,11 +265,11 @@ kmm_Mat_range(VALUE self, VALUE vn)
 VALUE
 kmm_Mat_irange(VALUE self, VALUE vn)
 {
-	const int n = NUM2INT(vn);
+	const size_t n = NUM2ZU(vn);
 	VALUE ret = km_Mat(n, 1, VT_INT);
 	int *body = km_mat2smat(ret)->ibody;
-	for ( int i=0; i<n; i++ ) {
-		body[i] = i;
+	for ( size_t i=0; i<n; i++ ) {
+		body[i] = s2i(i);
 	}
 	return ret;
 }
@@ -278,7 +278,7 @@ kmm_Mat_irange(VALUE self, VALUE vn)
 VALUE
 kmm_Mat__rand0(VALUE self, VALUE vm, VALUE vn, VALUE random)
 {
-	VALUE ret = km_Mat(NUM2INT(vm), NUM2INT(vn), VT_DOUBLE);
+	VALUE ret = km_Mat(NUM2ZU(vm), NUM2ZU(vn), VT_DOUBLE);
 	return kmm_mat__rand0(ret, random, Qnil);
 }
 
@@ -286,7 +286,7 @@ kmm_Mat__rand0(VALUE self, VALUE vm, VALUE vn, VALUE random)
 VALUE
 kmm_Mat__randn0(VALUE self, VALUE vm, VALUE vn, VALUE random)
 {
-	VALUE ret = km_Mat(NUM2INT(vm), NUM2INT(vn), VT_DOUBLE);
+	VALUE ret = km_Mat(NUM2ZU(vm), NUM2ZU(vn), VT_DOUBLE);
 	return kmm_mat__randn0(ret, random);
 }
 

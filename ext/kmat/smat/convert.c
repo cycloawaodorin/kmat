@@ -46,29 +46,29 @@ struct km_conv_arg {
 		bool *bbody;
 		VALUE *vbody;
 	};
-	int ldb;
+	size_t ldb;
 };
 
 static void
-z2d_func(COMPLEX *ent, int i, int j, void *data_)
+z2d_func(COMPLEX *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->dbody)[i+j*(data->ldb)] = creal(*ent);
 }
 static void
-i2d_func(int *ent, int i, int j, void *data_)
+i2d_func(int *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->dbody)[i+j*(data->ldb)] = (double)*ent;
 }
 static void
-b2d_func(bool *ent, int i, int j, void *data_)
+b2d_func(bool *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->dbody)[i+j*(data->ldb)] = (*ent ? 1.0 : 0.0);
 }
 static void
-v2d_func(VALUE *ent, int i, int j, void *data_)
+v2d_func(VALUE *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->dbody)[i+j*(data->ldb)] = NUM2DBL(*ent);
@@ -115,25 +115,25 @@ kmm_mat_to_fmat(VALUE self)
 }
 
 static void
-d2z_func(double *ent, int i, int j, void *data_)
+d2z_func(double *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->zbody)[i+j*(data->ldb)] = cpack(*ent, 0.0);
 }
 static void
-i2z_func(int *ent, int i, int j, void *data_)
+i2z_func(int *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->zbody)[i+j*(data->ldb)] = cpack((double)*ent, 0.0);
 }
 static void
-b2z_func(bool *ent, int i, int j, void *data_)
+b2z_func(bool *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->zbody)[i+j*(data->ldb)] = (*ent ? cpack(1.0, 0.0) : cpack(0.0, 0.0));
 }
 static void
-v2z_func(VALUE *ent, int i, int j, void *data_)
+v2z_func(VALUE *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->zbody)[i+j*(data->ldb)] = km_v2c(*ent);
@@ -180,25 +180,25 @@ kmm_mat_to_cmat(VALUE self)
 }
 
 static void
-d2i_func(double *ent, int i, int j, void *data_)
+d2i_func(double *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->ibody)[i+j*(data->ldb)] = (int)(*ent);
 }
 static void
-z2i_func(COMPLEX *ent, int i, int j, void *data_)
+z2i_func(COMPLEX *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->ibody)[i+j*(data->ldb)] = (int)creal(*ent);
 }
 static void
-b2i_func(bool *ent, int i, int j, void *data_)
+b2i_func(bool *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->ibody)[i+j*(data->ldb)] = (*ent ? 1 : 0);
 }
 static void
-v2i_func(VALUE *ent, int i, int j, void *data_)
+v2i_func(VALUE *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->ibody)[i+j*(data->ldb)] = NUM2INT(*ent);
@@ -245,25 +245,25 @@ kmm_mat_to_imat(VALUE self)
 }
 
 static void
-d2b_func(double *ent, int i, int j, void *data_)
+d2b_func(double *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->bbody)[i+j*(data->ldb)] = (*ent != 0.0);
 }
 static void
-z2b_func(COMPLEX *ent, int i, int j, void *data_)
+z2b_func(COMPLEX *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->bbody)[i+j*(data->ldb)] = (*ent != cpack(0.0, 0.0));
 }
 static void
-i2b_func(int *ent, int i, int j, void *data_)
+i2b_func(int *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->bbody)[i+j*(data->ldb)] = (*ent != 0);
 }
 static void
-v2b_func(VALUE *ent, int i, int j, void *data_)
+v2b_func(VALUE *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->bbody)[i+j*(data->ldb)] = RTEST(*ent);
@@ -310,25 +310,25 @@ kmm_mat_to_bmat(VALUE self)
 }
 
 static void
-d2v_func(double *ent, int i, int j, void *data_)
+d2v_func(double *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->vbody)[i+j*(data->ldb)] = rb_float_new(*ent);
 }
 static void
-z2v_func(COMPLEX *ent, int i, int j, void *data_)
+z2v_func(COMPLEX *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->vbody)[i+j*(data->ldb)] = km_c2v(*ent);
 }
 static void
-i2v_func(int *ent, int i, int j, void *data_)
+i2v_func(int *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->vbody)[i+j*(data->ldb)] = INT2NUM(*ent);
 }
 static void
-b2v_func(bool *ent, int i, int j, void *data_)
+b2v_func(bool *ent, size_t i, size_t j, void *data_)
 {
 	struct km_conv_arg *data = (struct km_conv_arg *)data_;
 	(data->vbody)[i+j*(data->ldb)] = TF2V(*ent);
