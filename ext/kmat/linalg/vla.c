@@ -15,7 +15,7 @@ km_vmat_solve_body(VALUE data)
 	KALLOCc(a->a, a->sa);
 	km_alloc_if_needed(a->sx, &(a->x));
 	km_copy2work(a->x.v, a->x.ld, a->sb);
-	VALUE zero=INT2NUM(0);
+	const VALUE zero=INT2NUM(0);
 	
 	// forward elimination
 	for ( size_t k=0; k<n; k++ ) {
@@ -34,7 +34,7 @@ km_vmat_solve_body(VALUE data)
 			rb_raise(km_eUncomp, "matrix is singular");
 			nonsingular: ;
 		}
-		VALUE akk = (a->a)[k+k*n];
+		const VALUE akk = (a->a)[k+k*n];
 		for ( size_t j=k+1; j<n; j++ ) {
 			(a->a)[k+j*n] = rb_funcall((a->a)[k+j*n], id_quo, 1, akk);
 		}
@@ -42,13 +42,13 @@ km_vmat_solve_body(VALUE data)
 			(a->x.v)[k+j*(a->x.ld)] = rb_funcall((a->x.v)[k+j*(a->x.ld)], id_quo, 1, akk);
 		}
 		for( size_t i=k+1; i<n; i++ ) {
-			VALUE aik = (a->a)[i+k*n];
+			const VALUE aik = (a->a)[i+k*n];
 			for ( size_t j=k+1; j<n; j++ ) {
-				VALUE tmp = rb_funcall(aik, id_op_mul, 1, (a->a)[k+j*n]);
+				const VALUE tmp = rb_funcall(aik, id_op_mul, 1, (a->a)[k+j*n]);
 				(a->a)[i+j*n] = rb_funcall((a->a)[i+j*n], id_op_minus, 1, tmp);
 			}
 			for ( size_t j=0; j<nrhs; j++ ) {
-				VALUE tmp = rb_funcall(aik, id_op_mul, 1, (a->x.v)[k+j*(a->x.ld)]);
+				const VALUE tmp = rb_funcall(aik, id_op_mul, 1, (a->x.v)[k+j*(a->x.ld)]);
 				(a->x.v)[i+j*(a->x.ld)] = rb_funcall((a->x.v)[i+j*(a->x.ld)], id_op_minus, 1, tmp);
 			}
 		}
@@ -57,9 +57,9 @@ km_vmat_solve_body(VALUE data)
 	// back substitution
 	for ( size_t k=n-1; k>0; k-- ) {
 		for ( size_t i=0; i<k; i++ ) {
-			VALUE aik = (a->a)[i+k*n];
+			const VALUE aik = (a->a)[i+k*n];
 			for ( size_t j=0; j<nrhs; j++ ) {
-				VALUE tmp = rb_funcall(aik, id_op_mul, 1, (a->x.v)[k+j*(a->x.ld)]);
+				const VALUE tmp = rb_funcall(aik, id_op_mul, 1, (a->x.v)[k+j*(a->x.ld)]);
 				(a->x.v)[i+j*(a->x.ld)] = rb_funcall((a->x.v)[i+j*(a->x.ld)], id_op_minus, 1, tmp);
 			}
 		}

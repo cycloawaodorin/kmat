@@ -21,7 +21,7 @@ kmm_MATH_log1p(VALUE self, VALUE x)
 VALUE
 kmm_float_sign(VALUE self)
 {
-	double x = NUM2DBL(self);
+	const double x = NUM2DBL(self);
 	if ( x == 0.0 ) {
 		return INT2NUM(0);
 	} else if ( x > 0.0 ) {

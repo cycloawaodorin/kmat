@@ -14,7 +14,7 @@ km_block_vector(RB_BLOCK_CALL_FUNC_ARGLIST(idx, ary))
 static long
 km_check_col_size(VALUE ary)
 {
-	long ret = RARRAY_LEN(rb_ary_entry(ary, 0));
+	const long ret = RARRAY_LEN(rb_ary_entry(ary, 0));
 	for ( long i=1; i<RARRAY_LEN(ary); i++ ) {
 		if ( RARRAY_LEN(rb_ary_entry(ary, i)) != ret ) {
 			rb_raise(km_eDim, "the length of rows must be the same");

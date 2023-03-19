@@ -3,7 +3,7 @@
 static int
 mod(int a, int b)
 {
-	int r = a % b;
+	const int r = a % b;
 	if ( r < 0 ) {
 		return r+b;
 	} else {
@@ -16,7 +16,7 @@ VALUE
 kmm_mat_get_value(VALUE self, VALUE vi, VALUE vj)
 {
 	SMAT *smat = km_mat2smat(self);
-	size_t i = NUM2ZU(vi), j = NUM2ZU(vj);
+	const size_t i = NUM2ZU(vi), j = NUM2ZU(vj);
 	if ( smat->m <= i || smat->n <= j ) {
 		rb_raise(rb_eIndexError, "index (%zu, %zu) is out of range (%zu, %zu)", i, j, smat->m, smat->n);
 	}
@@ -56,9 +56,9 @@ kmm_mat_get_rsub(VALUE self, VALUE vi, VALUE vj)
 	if ( sj->stype != ST_FULL ) {
 		sj = km_mat2smat(rb_obj_dup(vj));
 	}
-	int *is = si->ibody, *js = sj->ibody;
+	const int *is = si->ibody, *js = sj->ibody;
 	bool flg = true;
-	size_t m = LENGTH(si), n = LENGTH(sj);
+	const size_t m = LENGTH(si), n = LENGTH(sj);
 	for (size_t i=0; i<m-1; i++) {
 		if ( is[i+1]-is[i] != 1 ) {
 			flg = false;
@@ -331,7 +331,7 @@ kmm_mat__diag_ul(VALUE self, VALUE vk)
 	SMAT *smat = km_mat2smat(self);
 	VALUE ret = km_Mat_alloc(km_cMat);
 	SMAT *sr = km_mat2smat(ret);
-	long k = NUM2LONG(vk);
+	const long k = NUM2LONG(vk);
 	if ( k == 0 ) { return kmm_mat__diag(self); }
 	long len;
 	size_t i_s, j_s;
@@ -361,7 +361,7 @@ kmm_mat__diag_ul(VALUE self, VALUE vk)
 	if ( len <= 0 ) {
 		rb_raise(rb_eArgError, "given offset %ld exceeds range [-%ld, %ld]", k, s2l(smat->m)-1, s2l(smat->n)-1);
 	}
-	size_t len_s = l2s(len);
+	const size_t len_s = l2s(len);
 	km_smat_alloc_pbody(sr, len_s, 1, smat->vtype);
 	if ( smat->stype == ST_RSUB ) {
 		for ( size_t i=0; i<len_s; i++ ) {
@@ -477,7 +477,7 @@ km_index_treatment(VALUE *oidx, ITSYM *itsym, VALUE iidx, size_t size, bool conv
 			rb_raise(km_eVT, "float or complex matrix cannot be an index");
 		}
 	} else if ( rb_obj_is_kind_of(iidx, rb_cArray) ) {
-		long ii_size = RARRAY_LEN(iidx), size_l = s2l(size);
+		const long ii_size = RARRAY_LEN(iidx), size_l = s2l(size);
 		if ( ii_size == 0 ) {
 			*oidx = rb_ary_new3(2, INT2NUM(0), ZU2NUM(size));
 			*itsym = IT_SERIAL;
@@ -514,7 +514,7 @@ km_index_treatment(VALUE *oidx, ITSYM *itsym, VALUE iidx, size_t size, bool conv
 		*oidx = INT2NUM(mod(NUM2INT(iidx), s2i(size)));
 		*itsym = IT_INT;
 	} else if ( rb_obj_is_kind_of(iidx, rb_cRange) ) {
-		int f = mod(NUM2INT(rb_funcall(iidx, id_first, 0)), s2i(size));
+		const int f = mod(NUM2INT(rb_funcall(iidx, id_first, 0)), s2i(size));
 		int l = NUM2INT(rb_funcall(iidx, id_last, 0));
 		if ( RTEST(rb_funcall(iidx, id_exclude_end_p, 0)) ) {
 			l--;
@@ -669,7 +669,7 @@ kmm_mat_bracket_set(int argc, VALUE *argv, VALUE self)
 		if ( rb_obj_is_kind_of(argv[0], rb_cInteger) && rb_obj_is_kind_of(argv[1], rb_cInteger) ) {
 			kmm_mat_set_value(self, INT2NUM(mod(NUM2INT(argv[0]), s2i(smat->m))), INT2NUM(mod(NUM2INT(argv[1]), s2i(smat->n))), argv[2]);
 		} else {
-			bool flg = smat->may_have_sub;
+			const bool flg = smat->may_have_sub;
 			VALUE target = kmm_mat_bracket(2, argv, self);
 			if ( rb_obj_is_kind_of(argv[2], km_cMat) ) {
 				kmm_mat_copy_from(target, argv[2]);
@@ -689,12 +689,12 @@ kmm_mat_bracket_set(int argc, VALUE *argv, VALUE self)
 				rb_raise(rb_eArgError, "setting value with single integer index is available only for vectors, not (%zu, %zu) matricies", smat->m, smat->n);
 			}
 		} else {
-			bool flg = smat->may_have_sub;
+			const bool flg = smat->may_have_sub;
 			VALUE target = kmm_mat_bracket(1, argv, self);
 			if ( rb_obj_is_kind_of(argv[1], km_cMat) ) {
 				if ( rb_obj_is_kind_of(argv[0], km_cMat) && km_mat2smat(argv[0])->vtype == VT_BOOL ) {
 					SMAT *smat2 = km_mat2smat(argv[1]);
-					bool flg2 = smat2->may_have_sub;
+					const bool flg2 = smat2->may_have_sub;
 					VALUE vsrc = kmm_mat_bracket(1, argv, argv[1]);
 					kmm_mat_copy_from(target, vsrc);
 					kmm_mat__kill(vsrc);

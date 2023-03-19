@@ -12,8 +12,8 @@ km_rand_normal(VALUE random)
 		return NUM2DBL(rb_ivar_get(random, id_iv_kmat_stored_value));
 	} else {
 		rb_ivar_set(random, id_iv_kmat_stored, Qtrue);
-		double sqrt_m2_log_x = sqrt(-2.0*log1p(-NUM2DBL(rb_funcall(random, id_rand, 0))));
-		double two_pi_y = M_2PI*NUM2DBL(rb_funcall(random, id_rand, 0));
+		const double sqrt_m2_log_x = sqrt(-2.0*log1p(-NUM2DBL(rb_funcall(random, id_rand, 0))));
+		const double two_pi_y = M_2PI*NUM2DBL(rb_funcall(random, id_rand, 0));
 		rb_ivar_set(random, id_iv_kmat_stored_value, rb_float_new(sqrt_m2_log_x*sin(two_pi_y)));
 		return sqrt_m2_log_x*cos(two_pi_y);
 	}

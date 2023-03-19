@@ -261,7 +261,7 @@ kmm_mat_normf(VALUE self)
 		const int ld=s2i(smat->ld), n_i=s2i(n); \
 		double ret = bid##asum_(&n_i, smat->id##body, &ld); \
 		for ( size_t i=1; i<m; i++ ) { \
-			double temp = bid##asum_(&n_i, smat->id##body+i, &ld); \
+			const double temp = bid##asum_(&n_i, smat->id##body+i, &ld); \
 			if ( ret < temp ) { ret = temp; } \
 		} \
 		return rb_float_new(ret); \
@@ -655,7 +655,7 @@ km__rcondf_body(VALUE data)
 	km_check_info(info, km_eUncomp, "the matrix is exactry singular", "dgetrf");
 	dgetri_(&n, a->a, &n, a->ipiv, a->work, &lwork, &info);
 	km_check_info(info, rb_eRuntimeError, "unexpected info value", "dgetri");
-	int len = n*n, ione = 1;
+	const int len = n*n, ione = 1;
 	return rb_float_new(1.0/((a->normf)*dnrm2_(&len, a->a, &ione)));
 }
 static VALUE

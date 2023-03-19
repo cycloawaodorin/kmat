@@ -123,7 +123,7 @@ VALUE
 kmm_mat_trace(VALUE self)
 {
 	SMAT *smat = km_mat2smat(self);
-	size_t len = MIN(smat->m, smat->n);
+	const size_t len = MIN(smat->m, smat->n);
 	if ( smat->vtype == VT_DOUBLE ) {
 		double ret = 0.0;
 		for ( size_t i=0; i<len; i++ ) {

@@ -104,7 +104,7 @@ kmm_mat_reshape(VALUE self, VALUE vm, VALUE vn)
 	if ( smat->stype == ST_SSUB ) {
 		rb_raise(km_eShare, "can't reshape submatrix. try detach before reshaping");
 	}
-	size_t m = NUM2ZU(vm), n = NUM2ZU(vn);
+	const size_t m = NUM2ZU(vm), n = NUM2ZU(vn);
 	km_check_size2(m, n);
 	if ( m*n == LENGTH(smat) ) {
 		smat->trans = false;
@@ -129,7 +129,7 @@ kmm_mat_resize(VALUE self, VALUE vm, VALUE vn)
 	} else if ( kmm_mat_have_submatrix_p(self) ) {
 		rb_raise(km_eShare, "can't resize supermatrix. try detach before reshaping");
 	}
-	size_t m = NUM2ZU(vm), n = NUM2ZU(vn);
+	const size_t m = NUM2ZU(vm), n = NUM2ZU(vn);
 	if ( m*n == LENGTH(smat) ) {
 		return kmm_mat_reshape(self, vm, vn);
 	} else {

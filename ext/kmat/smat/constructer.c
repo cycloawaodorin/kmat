@@ -49,13 +49,13 @@ kmm_Mat_fill(int argc, VALUE *argv, VALUE self)
 {
 	rb_check_arity(argc, 1, 3);
 	VTYPE vt; VALUE ret;
-	VALUE v = argv[argc-1];
-	int type = TYPE(v);
+	const VALUE v = argv[argc-1];
+	const int type = TYPE(v);
 	if ( type == T_FLOAT ) {
 		vt = VT_DOUBLE;
 	} else if ( type == T_COMPLEX ) {
-		VALUE x = rb_funcall(v, id_real, 0);
-		VALUE y = rb_funcall(v, id_imag, 0);
+		const VALUE x = rb_funcall(v, id_real, 0);
+		const VALUE y = rb_funcall(v, id_imag, 0);
 		if ( ( TYPE(x) == T_FLOAT || TYPE(x) == T_FIXNUM ) && ( TYPE(y) == T_FLOAT || TYPE(y) == T_FIXNUM ) ) {
 			vt = VT_COMPLEX;
 		} else {
@@ -164,7 +164,7 @@ kmm_Mat_diag(int argc, VALUE *argv, VALUE self)
 			return ret;
 		}
 	} else { // k is given
-		long k = NUM2LONG(argv[1]);
+		const long k = NUM2LONG(argv[1]);
 		if ( rb_obj_is_kind_of(vsrc, km_cMat) ) {
 			VALUE ret;
 			SMAT *src = km_mat2smat(vsrc);
@@ -224,7 +224,7 @@ kmm_Mat_diag(int argc, VALUE *argv, VALUE self)
 			return ret;
 		} else if ( TYPE(vsrc) == T_ARRAY ) { // the argument is an Array
 			const long len_s = RARRAY_LEN(argv[0]);
-			size_t len = l2s(len_s+ABS(k));
+			const size_t len = l2s(len_s+ABS(k));
 			VALUE ret = km_Mat(len, len, VT_DOUBLE);
 			double *body = km_mat2smat(ret)->dbody;
 			if ( 0 < k ) {

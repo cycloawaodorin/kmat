@@ -544,4 +544,3 @@ km_smat_each3_bcvcv(SMAT *sa, const SMAT *sb, const SMAT *sc, void (*func)(bool 
 		}
 	}
 }
-

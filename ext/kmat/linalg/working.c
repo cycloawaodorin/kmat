@@ -189,7 +189,7 @@ km_copy_from_work(SMAT *smat, void *work, size_t ldw)
 			if ( smat->stype == ST_RSUB ) {
 				km_smat_each_with_index_d(smat, km_cfw_func_d, &data);
 			} else if ( smat->trans ) {
-				int one=1, n=s2i(smat->n), ldw_i=s2i(ldw);
+				const int one=1, n=s2i(smat->n), ldw_i=s2i(ldw);
 				for ( size_t i=0; i<smat->m; i++ ) {
 					dcopy_(&n, data.dwork+i, &ldw_i, smat->dbody+(i*smat->ld), &one);
 				}
@@ -202,7 +202,7 @@ km_copy_from_work(SMAT *smat, void *work, size_t ldw)
 			if ( smat->stype == ST_RSUB ) {
 				km_smat_each_with_index_z(smat, km_cfw_func_z, &data);
 			} else if ( smat->trans ) {
-				int one=1, n=s2i(smat->n), ldw_i=s2i(ldw);
+				const int one=1, n=s2i(smat->n), ldw_i=s2i(ldw);
 				for ( size_t i=0; i<smat->m; i++ ) {
 					zcopy_(&n, data.zwork+i, &ldw_i, smat->zbody+(i*smat->ld), &one);
 				}

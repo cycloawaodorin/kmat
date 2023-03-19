@@ -222,7 +222,7 @@ km_mprod_body(VALUE data)
 	} else if ( vt == VT_INT ) {
 		for ( int i=0; i<m; i++ ) { for ( int j=0; j<n; j++ ) {
 			int *foo=(a->r.i)+(i+j*s2i(a->r.ld));
-			int jldb = j*s2i(a->b.ld);
+			const int jldb = j*s2i(a->b.ld);
 			for ( int l=0; l<k; l++ ) {
 				*foo += (a->a.i)[i+l*s2i(a->a.ld)] * (a->b.i)[l+jldb];
 			}
@@ -230,9 +230,9 @@ km_mprod_body(VALUE data)
 	} else if ( vt == VT_BOOL ) {
 		for ( int i=0; i<m; i++ ) { for ( int j=0; j<n; j++ ) {
 			bool *foo=(a->r.b)+(i+j*s2i(a->r.ld));
-			int jldb = j*s2i(a->b.ld);
+			const int jldb = j*s2i(a->b.ld);
 			for ( int l=0; l<k; l++ ) {
-				bool bar = ( (a->a.b)[i+l*s2i(a->a.ld)] && (a->b.b)[l+jldb] );
+				const bool bar = ( (a->a.b)[i+l*s2i(a->a.ld)] && (a->b.b)[l+jldb] );
 				*foo = XOR(*foo, bar);
 			}
 		} }
@@ -240,9 +240,9 @@ km_mprod_body(VALUE data)
 		for ( int i=0; i<m; i++ ) { for ( int j=0; j<n; j++ ) {
 			VALUE *foo=(a->r.v)+(i+j*s2i(a->r.ld));
 			*foo = INT2NUM(0);
-			int jldb = j*s2i(a->b.ld);
+			const int jldb = j*s2i(a->b.ld);
 			for ( int l=0; l<k; l++ ) {
-				VALUE bar = rb_funcall( (a->a.v)[i+l*s2i(a->a.ld)], id_op_mul, 1, (a->b.v)[l+jldb] );
+				const VALUE bar = rb_funcall( (a->a.v)[i+l*s2i(a->a.ld)], id_op_mul, 1, (a->b.v)[l+jldb] );
 				*foo = rb_funcall(*foo, id_op_plus, 1, bar);
 			}
 		} }

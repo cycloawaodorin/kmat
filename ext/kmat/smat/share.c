@@ -86,7 +86,7 @@ bool
 km_smat_have_submatrix_p(SMAT *smat)
 {
 	if ( smat->may_have_sub ) {
-		VALUE v = km_smat_find_value(smat);
+		const VALUE v = km_smat_find_value(smat);
 		if ( v == Qnil ) {
 			rb_raise(km_eInternal, "km_smat_have_submatrix_p has been called with out-of-ruby-controlled Mat struct");
 		} else {
@@ -178,7 +178,7 @@ VALUE
 kmm_mat_detach(int argc, VALUE *argv, VALUE self)
 {
 	rb_check_arity(argc, 0, 1);
-	bool check_other = ( ( argc == 1 ) && RTEST(argv[0]) );
+	const bool check_other = ( ( argc == 1 ) && RTEST(argv[0]) );
 	SMAT *smat = km_mat2smat(self);
 	if ( smat->stype == ST_FULL ) {
 		VALUE list = kmm_mat_submatricies(self);
@@ -192,7 +192,7 @@ kmm_mat_detach(int argc, VALUE *argv, VALUE self)
 		smat->may_have_sub = false;
 		return self;
 	} else {
-		VALUE old_parent = smat->parent;
+		const VALUE old_parent = smat->parent;
 		kmm_mat_replace(self, rb_obj_dup(self));
 		if ( check_other ) {
 			kmm_mat_submatricies(old_parent);
@@ -348,7 +348,7 @@ km_rsub_check_range(SMAT *ssup, size_t ii, size_t jj)
 	sret->id##pbody[i+j*m] = ssup->id##body + INDEX(ssup, i2s(is[i]), i2s(js[j])); \
 } }
 VALUE
-km_Mat_rsub1(size_t m, size_t n, int *is, int *js, VALUE super)
+km_Mat_rsub1(size_t m, size_t n, const int *is, const int *js, VALUE super)
 {
 	km_check_size2(m, n);
 	VALUE ret = km_Mat_alloc(km_cMat);
@@ -392,7 +392,7 @@ km_Mat_rsub1(size_t m, size_t n, int *is, int *js, VALUE super)
 	sret->id##pbody[i+j*m] = ssup->id##body+INDEX(ssup, is[i+j*m], js[i+j*m]); \
 } }
 VALUE
-km_Mat_rsub2(size_t m, size_t n, size_t *is, size_t *js, VALUE super)
+km_Mat_rsub2(size_t m, size_t n, const size_t *is, const size_t *js, VALUE super)
 {
 	km_check_size2(m, n);
 	VALUE ret = km_Mat_alloc(km_cMat);

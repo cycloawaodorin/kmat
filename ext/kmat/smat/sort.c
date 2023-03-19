@@ -609,7 +609,7 @@ km_mat_##mm##_col(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 		for ( size_t j=0; j<sr->n; j++ ) { \
 			sr->dbody[j] = ENTITY(sa, d, 0, j); \
 			for ( size_t i=1; i<sa->m; i++ ) { \
-				double tmp = ENTITY(sa, d, i, j); \
+				const double tmp = ENTITY(sa, d, i, j); \
 				if ( sr->dbody[j] op tmp ) { \
 					sr->dbody[j] = tmp; \
 				} \
@@ -619,7 +619,7 @@ km_mat_##mm##_col(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 		for ( size_t j=0; j<sr->n; j++ ) { \
 			sr->ibody[j] = ENTITY(sa, i, 0, j); \
 			for ( size_t i=1; i<sa->m; i++ ) { \
-				int tmp = ENTITY(sa, i, i, j); \
+				const int tmp = ENTITY(sa, i, i, j); \
 				if ( sr->ibody[j] op tmp ) { \
 					sr->ibody[j] = tmp; \
 				} \
@@ -630,7 +630,7 @@ km_mat_##mm##_col(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 			sr->bbody[j] = ENTITY(sa, b, 0, j); \
 			if ( !(opb sr->bbody[j]) ) { \
 				for ( size_t i=1; i<sa->m; i++ ) { \
-					bool tmp = ENTITY(sa, b, i, j); \
+					const bool tmp = ENTITY(sa, b, i, j); \
 					if ( opb tmp ) { \
 						sr->bbody[j] = tmp; \
 					} \
@@ -641,7 +641,7 @@ km_mat_##mm##_col(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 		for ( size_t j=0; j<sr->n; j++ ) { \
 			sr->vbody[j] = ENTITY(sa, v, 0, j); \
 			for ( size_t i=1; i<sa->m; i++ ) { \
-				VALUE tmp = ENTITY(sa, v, i, j); \
+				const VALUE tmp = ENTITY(sa, v, i, j); \
 				if ( RTEST(rb_funcall(sr->vbody[j], op_id, 1, tmp)) ) { \
 					sr->vbody[j] = tmp; \
 				} \
@@ -664,7 +664,7 @@ km_mat_##mm##_row(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 		for ( size_t i=0; i<sr->m; i++ ) { \
 			sr->dbody[i] = ENTITY(sa, d, i, 0); \
 			for ( size_t j=1; j<sa->n; j++ ) { \
-				double tmp = ENTITY(sa, d, i, j); \
+				const double tmp = ENTITY(sa, d, i, j); \
 				if ( sr->dbody[i] op tmp ) { \
 					sr->dbody[i] = tmp; \
 				} \
@@ -674,7 +674,7 @@ km_mat_##mm##_row(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 		for ( size_t i=0; i<sr->m; i++ ) { \
 			sr->ibody[i] = ENTITY(sa, i, i, 0); \
 			for ( size_t j=1; j<sa->n; j++ ) { \
-				int tmp = ENTITY(sa, i, i, j); \
+				const int tmp = ENTITY(sa, i, i, j); \
 				if ( sr->ibody[i] op tmp ) { \
 					sr->ibody[i] = tmp; \
 				} \
@@ -685,7 +685,7 @@ km_mat_##mm##_row(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 			sr->bbody[i] = ENTITY(sa, b, i, 0); \
 			if ( !(opb sr->bbody[i]) ) { \
 				for ( size_t j=0; j<sa->n; j++ ) { \
-					bool tmp = ENTITY(sa, b, i, j); \
+					const bool tmp = ENTITY(sa, b, i, j); \
 					if ( opb tmp ) { \
 						sr->bbody[i] = tmp; \
 					} \
@@ -696,7 +696,7 @@ km_mat_##mm##_row(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 		for ( size_t i=0; i<sr->m; i++ ) { \
 			sr->vbody[i] = ENTITY(sa, v, i, 0); \
 			for ( size_t j=1; j<sa->n; j++ ) { \
-				VALUE tmp = ENTITY(sa, v, i, j); \
+				const VALUE tmp = ENTITY(sa, v, i, j); \
 				if ( RTEST(rb_funcall(sr->vbody[i], op_id, 1, tmp)) ) { \
 					sr->vbody[i] = tmp; \
 				} \
@@ -932,7 +932,7 @@ km_mat_arg##mm##_col(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 		for ( size_t j=0; j<sr->n; j++ ) { \
 			sr->ibody[j] = 0; double mm = ENTITY(sa, d, 0, j); \
 			for ( size_t i=0; i<sa->m; i++ ) { \
-				double tmp = ENTITY(sa, d, i, j); \
+				const double tmp = ENTITY(sa, d, i, j); \
 				if ( mm op tmp ) { \
 					sr->ibody[j] = s2i(i); mm = tmp; \
 				} \
@@ -942,7 +942,7 @@ km_mat_arg##mm##_col(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 		for ( size_t j=0; j<sr->n; j++ ) { \
 			sr->ibody[j] = 0; int mm = ENTITY(sa, i, 0, j); \
 			for ( size_t i=0; i<sa->m; i++ ) { \
-				int tmp = ENTITY(sa, i, i, j); \
+				const int tmp = ENTITY(sa, i, i, j); \
 				if ( mm op tmp ) { \
 					sr->ibody[j] = s2i(i); mm = tmp; \
 				} \
@@ -953,9 +953,9 @@ km_mat_arg##mm##_col(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 			sr->ibody[j] = 0; bool mm = ENTITY(sa, b, 0, j); \
 			if ( !( opb mm ) ) { \
 				for ( size_t i=0; i<sa->m; i++ ) { \
-					int tmp = ENTITY(sa, b, i, j); \
+					const bool tmp = ENTITY(sa, b, i, j); \
 					if ( opb tmp ) { \
-						sr->bbody[j] = s2i(i); break; \
+						sr->ibody[j] = s2i(i); mm = tmp; break; \
 					} \
 				} \
 			} \
@@ -964,7 +964,7 @@ km_mat_arg##mm##_col(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 		for ( size_t j=0; j<sr->n; j++ ) { \
 			sr->ibody[j] = 0; VALUE mm = ENTITY(sa, v, 0, j); \
 			for ( size_t i=0; i<sa->m; i++ ) { \
-				VALUE tmp = ENTITY(sa, v, i, j); \
+				const VALUE tmp = ENTITY(sa, v, i, j); \
 				if ( rb_funcall(mm, op_id, 1, tmp) ) { \
 					sr->ibody[j] = s2i(i); mm = tmp; \
 				} \
@@ -983,7 +983,7 @@ km_mat_arg##mm##_row(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 		for ( size_t i=0; i<sr->m; i++ ) { \
 			sr->ibody[i] = 0; double mm = ENTITY(sa, d, i, 0); \
 			for ( size_t j=1; j<sa->n; j++ ) { \
-				double tmp = ENTITY(sa, d, i, j); \
+				const double tmp = ENTITY(sa, d, i, j); \
 				if ( mm op tmp ) { \
 					sr->ibody[i] = s2i(j); mm = tmp; \
 				} \
@@ -993,7 +993,7 @@ km_mat_arg##mm##_row(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 		for ( size_t i=0; i<sr->m; i++ ) { \
 			sr->ibody[i] = 0; int mm = ENTITY(sa, i, i, 0); \
 			for ( size_t j=1; j<sa->n; j++ ) { \
-				int tmp = ENTITY(sa, i, i, j); \
+				const int tmp = ENTITY(sa, i, i, j); \
 				if ( mm op tmp ) { \
 					sr->ibody[i] = s2i(j); mm = tmp; \
 				} \
@@ -1001,12 +1001,12 @@ km_mat_arg##mm##_row(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 		} \
 	} else if ( sa->vtype == VT_BOOL ) { \
 		for ( size_t i=0; i<sr->m; i++ ) { \
-			sr->ibody[i] = 0; int mm = ENTITY(sa, b, i, 0); \
+			sr->ibody[i] = 0; bool mm = ENTITY(sa, b, i, 0); \
 			if ( ! (opb mm) ) { \
 				for ( size_t j=1; j<sa->n; j++ ) { \
-					int tmp = ENTITY(sa, i, i, j); \
+					const bool tmp = ENTITY(sa, i, i, j); \
 					if ( opb tmp ) { \
-						sr->ibody[i] = s2i(j); break; \
+						sr->ibody[i] = s2i(j); mm=tmp; break; \
 					} \
 				} \
 			} \
@@ -1015,7 +1015,7 @@ km_mat_arg##mm##_row(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 		for ( size_t i=0; i<sr->m; i++ ) { \
 			sr->ibody[i] = 0; VALUE mm = ENTITY(sa, v, i, 0); \
 			for ( size_t j=1; j<sa->n; j++ ) { \
-				VALUE tmp = ENTITY(sa, v, i, j); \
+				const VALUE tmp = ENTITY(sa, v, i, j); \
 				if ( rb_funcall(mm, op_id, 1, tmp) ) { \
 					sr->ibody[i] = s2i(j); mm = tmp; \
 				} \

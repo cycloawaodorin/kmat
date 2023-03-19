@@ -59,8 +59,8 @@ COMPLEX
 km_v2c(VALUE obj)
 {
 	VALUE c_obj = rb_funcall(obj, id_to_c, 0);
-	double x = NUM2DBL(rb_funcall(c_obj, id_real, 0));
-	double y = NUM2DBL(rb_funcall(c_obj, id_imag, 0));
+	const double x = NUM2DBL(rb_funcall(c_obj, id_real, 0));
+	const double y = NUM2DBL(rb_funcall(c_obj, id_imag, 0));
 	return cpack(x, y);
 }
 
@@ -146,7 +146,7 @@ kmm_mat_set_vtype(VALUE self, VALUE vsym)
 VALUE
 kmm_mat_stype(VALUE self)
 {
-	STYPE st = km_mat2smat(self)->stype;
+	const STYPE st = km_mat2smat(self)->stype;
 	if ( st == ST_FULL ) {
 		return sym_full;
 	} else if ( st == ST_SSUB ) {
