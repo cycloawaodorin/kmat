@@ -632,19 +632,19 @@ kmm_mat_ge_eigen_values(VALUE va)
 	return kmm_mat_ge_eigen_values_destl(km_Mat(km_mat2smat(va)->m, 1, VT_COMPLEX), va);
 }
 
-// compute a matrix consists of right-eigenvectors V and a diagonal matrix consists of right-eigenvalues D, AV=DV of a non-symmetric matrix A.
+// compute a matrix consists of right-eigenvectors V and a diagonal matrix consists of right-eigenvalues D, AV=VD of a non-symmetric matrix A.
 // the arguments are outputs
 struct km_ge_evd_arg {
 	SMAT *sa, *sv, *sd;
-	double *a, *wr, *wi, *scale, *work;
-	LAWORK vr;
+	double *a, *wr, *wi, *scale, *work, *vr;
 };
 static VALUE
 km_ge_evd_body(VALUE data)
 {
 	struct km_ge_evd_arg *a = (struct km_ge_evd_arg *)data;
 	
-	int n = s2i(a->sa->m);
+	const size_t n_s = a->sa->m;
+	int n = s2i(n_s);
 	km_check_size(5, s2i(a->sa->n),n, s2i(a->sv->m),n, s2i(a->sv->n),n, s2i(a->sd->m),n, s2i(a->sd->n),n);
 	
 	double opt; int lwork=-1, ilo, ihi, info;
@@ -659,18 +659,59 @@ km_ge_evd_body(VALUE data)
 	KALLOC(a->wi, n);
 	KALLOC(a->scale, n);
 	KALLOC(a->work, lwork);
-	KALLOCn(a->vr, a->sv);
+	KALLOC(a->vr, n*n);
 	
 	double abnrm;
-	dgeevx_(balanc, jobvl, jobvr, sense, &n, a->a, &n, a->wr, a->wi, NULL, &n, a->vr.d, &n,
+	dgeevx_(balanc, jobvl, jobvr, sense, &n, a->a, &n, a->wr, a->wi, NULL, &n, a->vr, &n,
 		&ilo, &ihi, a->scale, &abnrm, NULL, NULL, a->work, &lwork, NULL, &info);
 	km_check_info(info, rb_eRuntimeError, "the QR algorithm failed to compute all the eigenvalues", "dgeevx");
 	if ( a->sd->stype == ST_RSUB ) {
-		for ( size_t i=0; i<i2s(n); i++ ) {
+		for ( size_t j=0; j<n_s; j++ ) {
+			if (a->wi[j] == 0.0) {
+				for ( size_t i=0; i<n_s; i++ ) {
+					ENTITYr0(a->sv, z, INDEX(a->sv, i, j)) = cpack(a->vr[i+j*n_s], 0.0);
+				}
+			} else if (j == 0) {
+				for ( size_t i=0; i<n_s; i++ ) {
+					ENTITYr0(a->sv, z, INDEX(a->sv, i, j)) = cpack(a->vr[i], a->vr[i+n_s]);
+				}
+			} else if (a->wr[j] == a->wr[j+1] && a->wi[j] == -a->wi[j+1]) {
+				for ( size_t i=0; i<n_s; i++ ) {
+					ENTITYr0(a->sv, z, INDEX(a->sv, i, j)) = cpack(a->vr[i+j*n_s], a->vr[i+(j+1)*n_s]);
+				}
+			} else {
+				for ( size_t i=0; i<n_s; i++ ) {
+					ENTITYr0(a->sv, z, INDEX(a->sv, i, j)) = cpack(a->vr[i+(j-1)*n_s], -a->vr[i+j*n_s]);
+				}
+			}
+		}
+	} else {
+		for ( size_t j=0; j<n_s; j++ ) {
+			if (a->wi[j] == 0.0) {
+				for ( size_t i=0; i<n_s; i++ ) {
+					ENTITYd0(a->sv, z, INDEX(a->sv, i, j)) = cpack(a->vr[i+j*n_s], 0.0);
+				}
+			} else if (j == 0) {
+				for ( size_t i=0; i<n_s; i++ ) {
+					ENTITYd0(a->sv, z, INDEX(a->sv, i, j)) = cpack(a->vr[i], a->vr[i+n_s]);
+				}
+			} else if (a->wr[j] == a->wr[j+1] && a->wi[j] == -a->wi[j+1]) {
+				for ( size_t i=0; i<n_s; i++ ) {
+					ENTITYd0(a->sv, z, INDEX(a->sv, i, j)) = cpack(a->vr[i+j*n_s], a->vr[i+(j+1)*n_s]);
+				}
+			} else {
+				for ( size_t i=0; i<n_s; i++ ) {
+					ENTITYd0(a->sv, z, INDEX(a->sv, i, j)) = cpack(a->vr[i+(j-1)*n_s], -a->vr[i+j*n_s]);
+				}
+			}
+		}
+	}
+	if ( a->sd->stype == ST_RSUB ) {
+		for ( size_t i=0; i<n_s; i++ ) {
 			ENTITYr0(a->sd, z, i+i*(a->sd->ld)) = cpack(a->wr[i], a->wi[i]);
 		}
 	} else {
-		for ( size_t i=0; i<i2s(n); i++ ) {
+		for ( size_t i=0; i<n_s; i++ ) {
 			ENTITYd0(a->sd, z, i+i*(a->sd->ld)) = cpack(a->wr[i], a->wi[i]);
 		}
 	}
@@ -682,7 +723,7 @@ km_ge_evd_ensure(VALUE data)
 {
 	struct km_ge_evd_arg *a = (struct km_ge_evd_arg *)data;
 	
-	km_copy_and_free_if_needed(a->sv, &(a->vr));
+	ruby_xfree(a->vr);
 	ruby_xfree(a->work);
 	ruby_xfree(a->scale);
 	ruby_xfree(a->wi);
@@ -697,7 +738,7 @@ kmm_mat_ge_evd_destl(VALUE self, VALUE vv, VALUE vd)
 	km_check_frozen(vv); km_check_frozen(vd);
 	struct km_ge_evd_arg a; memset(&a, 0, sizeof(a));
 	a.sa = km_mat2smat(self); a.sv = km_mat2smat(vv); a.sd = km_mat2smat(vd);
-	km_check_double(2, a.sa, a.sv); km_check_complex(1, a.sd);
+	km_check_double(1, a.sa, a.sv); km_check_complex(2, a.sv, a.sd);
 	km_check_finite(a.sa);
 	
 	kmm_mat_zero(vd);
@@ -709,7 +750,7 @@ VALUE
 kmm_mat_ge_evd(VALUE self)
 {
 	const size_t n = km_mat2smat(self)->n;
-	VALUE vv = km_Mat(n, n, VT_DOUBLE);
+	VALUE vv = km_Mat(n, n, VT_COMPLEX);
 	VALUE vd = km_Mat(n, n, VT_COMPLEX);
 	kmm_mat_ge_evd_destl(self, vv, vd);
 	return rb_ary_new3(2, vv, vd);

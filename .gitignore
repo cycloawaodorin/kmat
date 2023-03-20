@@ -13,4 +13,5 @@
 *.a
 mkmf.log
 Gemfile.lock
+/spec/examples.txt
 test.rb

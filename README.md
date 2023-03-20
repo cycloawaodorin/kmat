@@ -68,7 +68,7 @@ a          #=> [3, 1; 1, 2]
 c = Mat.new(2, 2)
 c.mprod!(a, b)
 c          #=> [6, 1; 2, 2]
-a.sub!(b); a.e_mul!(b); b.e_div!(a); c.under!(a, b)
+a.sub!(b); a.e_mul!(b); b.e_div!(a); c.under!(b, a)
 ```
 
 ### Numpy-like broadcasting

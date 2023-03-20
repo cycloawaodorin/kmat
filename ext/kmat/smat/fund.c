@@ -622,7 +622,7 @@ kmm_mat_symmetry_p(int argc, VALUE *argv, VALUE self)
 
 // judge whether `self' is near to `other'
 // consider a is near to b iff |a-b| < tol
-// the default value of tol is (maximub absolute value of each element) * max(m, n) * eps
+// the default value of tol is (maximum absolute value of each element) * max(m, n) * eps
 static bool
 km_near_abs_d(double a, double b, double tol)
 {
@@ -698,5 +698,5 @@ kmm_mat_near_p(int argc, VALUE *argv, VALUE self)
 		km_smat_each2_b(ss, so, km_near_func_b, (void *)&data);,
 		km_smat_each2_v(ss, so, km_near_func_v, (void *)&data);
 	);
-	return data.ret;
+	return TF2V(data.ret);
 }
