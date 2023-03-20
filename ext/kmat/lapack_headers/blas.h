@@ -351,4 +351,3 @@ void ztrsm_(char *side, char *uplo, char *trans, char *diag, int *m, int *n,
 #endif
 
 #endif
-
