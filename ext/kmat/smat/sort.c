@@ -29,43 +29,43 @@ km_value_comp(const void *a, const void *b)
 	return NUM2INT(rb_funcall(*(VALUE *)a, id_op_comp, 1, *(VALUE *)b));
 }
 static void
-km_sort_seg(int size_seg, int ld, int num_seg, void *body, VTYPE vt)
+km_sort_seg(size_t size_seg, size_t ld, size_t num_seg, void *body, VTYPE vt)
 {
 	if ( vt == VT_DOUBLE ) {
-		for ( int i=0; i<num_seg; i++ ) {
-			int info; char id[] = "I";
-			dlasrt_(id, &size_seg, ((double *)body)+(i*ld), &info);
+		for ( size_t i=0; i<num_seg; i++ ) {
+			int info, sseg=s2i(size_seg); char id[] = "I";
+			dlasrt_(id, &sseg, ((double *)body)+(i*ld), &info);
 		}
 	} else if ( vt == VT_INT ) {
-		for ( int i=0; i<num_seg; i++ ) {
-			qsort(((int *)body)+(i*ld), int2size_t(size_seg), sizeof(int), km_int_comp);
+		for ( size_t i=0; i<num_seg; i++ ) {
+			qsort(((int *)body)+(i*ld), size_seg, sizeof(int), km_int_comp);
 		}
 	} else if ( vt == VT_BOOL ) {
-		for ( int i=0; i<num_seg; i++ ) {
-			qsort(((bool *)body)+(i*ld), int2size_t(size_seg), sizeof(bool), km_bool_comp);
+		for ( size_t i=0; i<num_seg; i++ ) {
+			qsort(((bool *)body)+(i*ld), size_seg, sizeof(bool), km_bool_comp);
 		}
 	} else {
-		for ( int i=0; i<num_seg; i++ ) {
-			qsort(((VALUE *)body)+(i*ld), int2size_t(size_seg), sizeof(VALUE), km_value_comp);
+		for ( size_t i=0; i<num_seg; i++ ) {
+			qsort(((VALUE *)body)+(i*ld), size_seg, sizeof(VALUE), km_value_comp);
 		}
 	}
 }
 #define SKEWER(type) type *b = (type *)body; type *b2 = ZALLOC_N(type, size_sk*num_sk); \
-	for ( int i=0; i<size_sk; i++ ) { \
-		for ( int j=0; j<num_sk; j++ ) { \
+	for ( size_t i=0; i<size_sk; i++ ) { \
+		for ( size_t j=0; j<num_sk; j++ ) { \
 			b2[i+j*size_sk] = b[j+i*ld]; \
 		} \
 	} \
 	km_sort_seg(size_sk, size_sk, num_sk, b2, vt); \
-	for ( int i=0; i<size_sk; i++ ) { \
-		for ( int j=0; j<num_sk; j++ ) { \
+	for ( size_t i=0; i<size_sk; i++ ) { \
+		for ( size_t j=0; j<num_sk; j++ ) { \
 			b[j+i*ld] = b2[i+j*size_sk]; \
 		} \
 	} \
 	ruby_xfree(b2)
 
 static void
-km_sort_skewer(int size_sk, int ld, int num_sk, void *body, VTYPE vt)
+km_sort_skewer(size_t size_sk, size_t ld, size_t num_sk, void *body, VTYPE vt)
 {
 	if ( vt == VT_DOUBLE ) {
 		SKEWER(double);
@@ -167,43 +167,43 @@ km_value_rcomp(const void *a, const void *b)
 	return NUM2INT(rb_funcall(*(VALUE *)b, id_op_comp, 1, *(VALUE *)a));
 }
 static void
-km_rsort_seg(int size_seg, int ld, int num_seg, void *body, VTYPE vt)
+km_rsort_seg(size_t size_seg, size_t ld, size_t num_seg, void *body, VTYPE vt)
 {
 	if ( vt == VT_DOUBLE ) {
-		for ( int i=0; i<num_seg; i++ ) {
-			int info; char id[] = "D";
-			dlasrt_(id, &size_seg, ((double *)body)+(i*ld), &info);
+		for ( size_t i=0; i<num_seg; i++ ) {
+			int info, sseg=s2i(size_seg); char id[] = "D";
+			dlasrt_(id, &sseg, ((double *)body)+(i*ld), &info);
 		}
 	} else if ( vt == VT_INT ) {
-		for ( int i=0; i<num_seg; i++ ) {
-			qsort(((int *)body)+(i*ld), int2size_t(size_seg), sizeof(int), km_int_rcomp);
+		for ( size_t i=0; i<num_seg; i++ ) {
+			qsort(((int *)body)+(i*ld), size_seg, sizeof(int), km_int_rcomp);
 		}
 	} else if ( vt == VT_BOOL ) {
-		for ( int i=0; i<num_seg; i++ ) {
-			qsort(((bool *)body)+(i*ld), int2size_t(size_seg), sizeof(bool), km_bool_rcomp);
+		for ( size_t i=0; i<num_seg; i++ ) {
+			qsort(((bool *)body)+(i*ld), size_seg, sizeof(bool), km_bool_rcomp);
 		}
 	} else {
-		for ( int i=0; i<num_seg; i++ ) {
-			qsort(((VALUE *)body)+(i*ld), int2size_t(size_seg), sizeof(VALUE), km_value_rcomp);
+		for ( size_t i=0; i<num_seg; i++ ) {
+			qsort(((VALUE *)body)+(i*ld), size_seg, sizeof(VALUE), km_value_rcomp);
 		}
 	}
 }
 #define rSKEWER(type) type *b = (type *)body; type *b2 = ZALLOC_N(type, size_sk*num_sk); \
-	for ( int i=0; i<size_sk; i++ ) { \
-		for ( int j=0; j<num_sk; j++ ) { \
+	for ( size_t i=0; i<size_sk; i++ ) { \
+		for ( size_t j=0; j<num_sk; j++ ) { \
 			b2[i+j*size_sk] = b[j+i*ld]; \
 		} \
 	} \
 	km_rsort_seg(size_sk, size_sk, num_sk, b2, vt); \
-	for ( int i=0; i<size_sk; i++ ) { \
-		for ( int j=0; j<num_sk; j++ ) { \
+	for ( size_t i=0; i<size_sk; i++ ) { \
+		for ( size_t j=0; j<num_sk; j++ ) { \
 			b[j+i*ld] = b2[i+j*size_sk]; \
 		} \
 	} \
 	ruby_xfree(b2)
 
 static void
-km_rsort_skewer(int size_sk, int ld, int num_sk, void *body, VTYPE vt)
+km_rsort_skewer(size_t size_sk, size_t ld, size_t num_sk, void *body, VTYPE vt)
 {
 	if ( vt == VT_DOUBLE ) {
 		rSKEWER(double);
@@ -286,28 +286,28 @@ static union {
 	bool *b;
 	VALUE *v;
 } as_body;
-static int as_step;
+static size_t as_step;
 static int
 as_dcomp(const void *a, const void *b)
 {
-	return (int)copysign(1.0, as_body.d[(*(int *)a)*as_step]-as_body.d[(*(int *)b)*as_step]);
+	return (int)copysign(1.0, as_body.d[(*(size_t *)a)*as_step]-as_body.d[(*(size_t *)b)*as_step]);
 }
 static int
 as_icomp(const void *a, const void *b)
 {
-	return as_body.i[(*(int *)a)*as_step] - as_body.i[(*(int *)b)*as_step];
+	return as_body.i[(*(size_t *)a)*as_step] - as_body.i[(*(size_t *)b)*as_step];
 }
 static int
 as_bcomp(const void *a, const void *b)
 {
-	if ( as_body.b[(*(int *)a)*as_step] ) {
-		if ( as_body.b[(*(int *)b)*as_step] ) {
+	if ( as_body.b[(*(size_t *)a)*as_step] ) {
+		if ( as_body.b[(*(size_t *)b)*as_step] ) {
 			return 0;
 		} else {
 			return 1;
 		}
 	} else {
-		if ( as_body.b[(*(int *)b)*as_step] ) {
+		if ( as_body.b[(*(size_t *)b)*as_step] ) {
 			return -1;
 		} else {
 			return 0;
@@ -317,7 +317,7 @@ as_bcomp(const void *a, const void *b)
 static int
 as_vcomp(const void *a, const void *b)
 {
-	return NUM2INT(rb_funcall(as_body.v[(*(int *)a)*as_step], id_op_comp, 1, as_body.v[(*(int *)b)*as_step]));
+	return NUM2INT(rb_funcall(as_body.v[(*(size_t *)a)*as_step], id_op_comp, 1, as_body.v[(*(size_t *)b)*as_step]));
 }
 VALUE
 kmm_mat_argsort_destl(VALUE self, VALUE va, VALUE vp)
@@ -328,18 +328,19 @@ kmm_mat_argsort_destl(VALUE self, VALUE va, VALUE vp)
 		rb_raise(rb_eRuntimeError, "self must be an int full vector");
 	}
 	si->trans = false; si->ld = si->m; // this is available because si is a vector
-	int *idx = si->ibody, p=NUM2INT(vp), offset;
+	int *idx = si->ibody;
+	size_t p=NUM2ZU(vp), offset;
 	if ( si->m == sa->m && si->n == 1 ) {
-		if ( p < 0 || sa->n <= p ) { rb_raise(rb_eIndexError, "p is out of range"); }
-		for ( int i=0; i<si->m; i++ ) { idx[i] = i; }
+		if ( sa->n <= p ) { rb_raise(rb_eIndexError, "p is out of range"); }
+		for ( size_t i=0; i<si->m; i++ ) { idx[i] = s2i(i); }
 		if ( sa->trans ) {
 			offset = p; as_step = sa->ld;
 		} else {
 			offset = p*si->ld; as_step = 1;
 		}
 	} else if ( si->m == 1 && si->n == sa->n ) {
-		if ( p < 0 || sa->m <= p ) { rb_raise(rb_eIndexError, "p is out of range"); }
-		for ( int i=0; i<si->n; i++ ) { idx[i] = i; }
+		if ( sa->m <= p ) { rb_raise(rb_eIndexError, "p is out of range"); }
+		for ( size_t i=0; i<si->n; i++ ) { idx[i] = s2i(i); }
 		if ( sa->trans ) {
 			offset = p*si->ld; as_step = 1;
 		} else {
@@ -350,20 +351,20 @@ kmm_mat_argsort_destl(VALUE self, VALUE va, VALUE vp)
 	}
 	if ( sa->vtype == VT_DOUBLE ) {
 		as_body.d = sa->dbody; as_body.d += offset;
-		qsort(idx, LENGTHs(si), sizeof(int), as_dcomp);
+		qsort(idx, LENGTH(si), sizeof(int), as_dcomp);
 	} else if ( sa->vtype == VT_INT ) {
 		as_body.i = sa->ibody; as_body.i += offset;
-		qsort(idx, LENGTHs(si), sizeof(int), as_icomp);
+		qsort(idx, LENGTH(si), sizeof(int), as_icomp);
 	} else if ( sa->vtype == VT_BOOL ) {
 		as_body.b = sa->bbody; as_body.b += offset;
-		qsort(idx, LENGTHs(si), sizeof(int), as_bcomp);
+		qsort(idx, LENGTH(si), sizeof(int), as_bcomp);
 	} else if ( sa->vtype == VT_VALUE ) {
 		as_body.v = sa->vbody; as_body.v += offset;
-		qsort(idx, LENGTHs(si), sizeof(int), as_vcomp);
+		qsort(idx, LENGTH(si), sizeof(int), as_vcomp);
 	} else {
 		SMAT *sa2 = km_mat2smat(kmm_mat_to_omat(va));
 		as_body.v = sa2->vbody; as_body.v += offset;
-		qsort(idx, LENGTHs(si), sizeof(int), as_vcomp);
+		qsort(idx, LENGTH(si), sizeof(int), as_vcomp);
 	}
 	return self;
 }
@@ -404,24 +405,24 @@ kmm_mat_argsort(int argc, VALUE *argv, VALUE va)
 static int
 ras_dcomp(const void *a, const void *b)
 {
-	return (int)copysign(1.0, as_body.d[(*(int *)a)*as_step]-as_body.d[(*(int *)b)*as_step]);
+	return (int)copysign(1.0, as_body.d[(*(size_t *)a)*as_step]-as_body.d[(*(size_t *)b)*as_step]);
 }
 static int
 ras_icomp(const void *a, const void *b)
 {
-	return as_body.i[(*(int *)a)*as_step] - as_body.i[(*(int *)b)*as_step];
+	return as_body.i[(*(size_t *)a)*as_step] - as_body.i[(*(size_t *)b)*as_step];
 }
 static int
 ras_bcomp(const void *a, const void *b)
 {
-	if ( as_body.b[(*(int *)a)*as_step] ) {
-		if ( as_body.b[(*(int *)b)*as_step] ) {
+	if ( as_body.b[(*(size_t *)a)*as_step] ) {
+		if ( as_body.b[(*(size_t *)b)*as_step] ) {
 			return 0;
 		} else {
 			return -1;
 		}
 	} else {
-		if ( as_body.b[(*(int *)b)*as_step] ) {
+		if ( as_body.b[(*(size_t *)b)*as_step] ) {
 			return 1;
 		} else {
 			return 0;
@@ -431,7 +432,7 @@ ras_bcomp(const void *a, const void *b)
 static int
 ras_vcomp(const void *a, const void *b)
 {
-	return NUM2INT(rb_funcall(as_body.v[(*(int *)a)*as_step], id_op_comp, 1, as_body.v[(*(int *)b)*as_step]));
+	return NUM2INT(rb_funcall(as_body.v[(*(size_t *)a)*as_step], id_op_comp, 1, as_body.v[(*(size_t *)b)*as_step]));
 }
 VALUE
 kmm_mat_rargsort_destl(VALUE self, VALUE va, VALUE vp)
@@ -442,18 +443,19 @@ kmm_mat_rargsort_destl(VALUE self, VALUE va, VALUE vp)
 		rb_raise(rb_eRuntimeError, "self must be an int full vector");
 	}
 	si->trans = false; si->ld = si->m; // this is available because si is a vector
-	int *idx = si->ibody, p=NUM2INT(vp), offset;
+	int *idx = si->ibody;
+	size_t p=NUM2ZU(vp), offset;
 	if ( si->m == sa->m && si->n == 1 ) {
-		if ( p < 0 || sa->n <= p ) { rb_raise(rb_eIndexError, "p is out of range"); }
-		for ( int i=0; i<si->m; i++ ) { idx[i] = i; }
+		if ( sa->n <= p ) { rb_raise(rb_eIndexError, "p is out of range"); }
+		for ( size_t i=0; i<si->m; i++ ) { idx[i] = s2i(i); }
 		if ( sa->trans ) {
 			offset = p; as_step = sa->ld;
 		} else {
 			offset = p*si->ld; as_step = 1;
 		}
 	} else if ( si->m == 1 && si->n == sa->n ) {
-		if ( p < 0 || sa->m <= p ) { rb_raise(rb_eIndexError, "p is out of range"); }
-		for ( int i=0; i<si->n; i++ ) { idx[i] = i; }
+		if ( sa->m <= p ) { rb_raise(rb_eIndexError, "p is out of range"); }
+		for ( size_t i=0; i<si->n; i++ ) { idx[i] = s2i(i); }
 		if ( sa->trans ) {
 			offset = p*si->ld; as_step = 1;
 		} else {
@@ -464,20 +466,20 @@ kmm_mat_rargsort_destl(VALUE self, VALUE va, VALUE vp)
 	}
 	if ( sa->vtype == VT_DOUBLE ) {
 		as_body.d = sa->dbody; as_body.d += offset;
-		qsort(idx, LENGTHs(si), sizeof(int), ras_dcomp);
+		qsort(idx, LENGTH(si), sizeof(int), ras_dcomp);
 	} else if ( sa->vtype == VT_INT ) {
 		as_body.i = sa->ibody; as_body.i += offset;
-		qsort(idx, LENGTHs(si), sizeof(int), ras_icomp);
+		qsort(idx, LENGTH(si), sizeof(int), ras_icomp);
 	} else if ( sa->vtype == VT_BOOL ) {
 		as_body.b = sa->bbody; as_body.b += offset;
-		qsort(idx, LENGTHs(si), sizeof(int), ras_bcomp);
+		qsort(idx, LENGTH(si), sizeof(int), ras_bcomp);
 	} else if ( sa->vtype == VT_VALUE ) {
 		as_body.v = sa->vbody; as_body.v += offset;
-		qsort(idx, LENGTHs(si), sizeof(int), ras_vcomp);
+		qsort(idx, LENGTH(si), sizeof(int), ras_vcomp);
 	} else {
 		SMAT *sa2 = km_mat2smat(kmm_mat_to_omat(va));
 		as_body.v = sa2->vbody; as_body.v += offset;
-		qsort(idx, LENGTHs(si), sizeof(int), ras_vcomp);
+		qsort(idx, LENGTH(si), sizeof(int), ras_vcomp);
 	}
 	return self;
 }
@@ -604,31 +606,31 @@ static VALUE \
 km_mat_##mm##_col(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 { \
 	if ( sr->vtype == VT_DOUBLE ) { \
-		for ( int j=0; j<sr->n; j++ ) { \
+		for ( size_t j=0; j<sr->n; j++ ) { \
 			sr->dbody[j] = ENTITY(sa, d, 0, j); \
-			for ( int i=1; i<sa->m; i++ ) { \
-				double tmp = ENTITY(sa, d, i, j); \
+			for ( size_t i=1; i<sa->m; i++ ) { \
+				const double tmp = ENTITY(sa, d, i, j); \
 				if ( sr->dbody[j] op tmp ) { \
 					sr->dbody[j] = tmp; \
 				} \
 			} \
 		} \
 	} else if ( sr->vtype == VT_INT ) { \
-		for ( int j=0; j<sr->n; j++ ) { \
+		for ( size_t j=0; j<sr->n; j++ ) { \
 			sr->ibody[j] = ENTITY(sa, i, 0, j); \
-			for ( int i=1; i<sa->m; i++ ) { \
-				int tmp = ENTITY(sa, i, i, j); \
+			for ( size_t i=1; i<sa->m; i++ ) { \
+				const int tmp = ENTITY(sa, i, i, j); \
 				if ( sr->ibody[j] op tmp ) { \
 					sr->ibody[j] = tmp; \
 				} \
 			} \
 		} \
 	} else if ( sr->vtype == VT_BOOL ) { \
-		for ( int j=0; j<sr->n; j++ ) { \
+		for ( size_t j=0; j<sr->n; j++ ) { \
 			sr->bbody[j] = ENTITY(sa, b, 0, j); \
 			if ( !(opb sr->bbody[j]) ) { \
-				for ( int i=1; i<sa->m; i++ ) { \
-					bool tmp = ENTITY(sa, b, i, j); \
+				for ( size_t i=1; i<sa->m; i++ ) { \
+					const bool tmp = ENTITY(sa, b, i, j); \
 					if ( opb tmp ) { \
 						sr->bbody[j] = tmp; \
 					} \
@@ -636,10 +638,10 @@ km_mat_##mm##_col(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 			} \
 		} \
 	} else if ( sr->vtype == VT_VALUE ) { \
-		for ( int j=0; j<sr->n; j++ ) { \
+		for ( size_t j=0; j<sr->n; j++ ) { \
 			sr->vbody[j] = ENTITY(sa, v, 0, j); \
-			for ( int i=1; i<sa->m; i++ ) { \
-				VALUE tmp = ENTITY(sa, v, i, j); \
+			for ( size_t i=1; i<sa->m; i++ ) { \
+				const VALUE tmp = ENTITY(sa, v, i, j); \
 				if ( RTEST(rb_funcall(sr->vbody[j], op_id, 1, tmp)) ) { \
 					sr->vbody[j] = tmp; \
 				} \
@@ -659,31 +661,31 @@ static VALUE \
 km_mat_##mm##_row(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 { \
 	if ( sr->vtype == VT_DOUBLE ) { \
-		for ( int i=0; i<sr->m; i++ ) { \
+		for ( size_t i=0; i<sr->m; i++ ) { \
 			sr->dbody[i] = ENTITY(sa, d, i, 0); \
-			for ( int j=1; j<sa->n; j++ ) { \
-				double tmp = ENTITY(sa, d, i, j); \
+			for ( size_t j=1; j<sa->n; j++ ) { \
+				const double tmp = ENTITY(sa, d, i, j); \
 				if ( sr->dbody[i] op tmp ) { \
 					sr->dbody[i] = tmp; \
 				} \
 			} \
 		} \
 	} else if ( sr->vtype == VT_INT ) { \
-		for ( int i=0; i<sr->m; i++ ) { \
+		for ( size_t i=0; i<sr->m; i++ ) { \
 			sr->ibody[i] = ENTITY(sa, i, i, 0); \
-			for ( int j=1; j<sa->n; j++ ) { \
-				int tmp = ENTITY(sa, i, i, j); \
+			for ( size_t j=1; j<sa->n; j++ ) { \
+				const int tmp = ENTITY(sa, i, i, j); \
 				if ( sr->ibody[i] op tmp ) { \
 					sr->ibody[i] = tmp; \
 				} \
 			} \
 		} \
 	} else if ( sr->vtype == VT_BOOL ) { \
-		for ( int i=0; i<sr->m; i++ ) { \
+		for ( size_t i=0; i<sr->m; i++ ) { \
 			sr->bbody[i] = ENTITY(sa, b, i, 0); \
 			if ( !(opb sr->bbody[i]) ) { \
-				for ( int j=0; j<sa->n; j++ ) { \
-					bool tmp = ENTITY(sa, b, i, j); \
+				for ( size_t j=0; j<sa->n; j++ ) { \
+					const bool tmp = ENTITY(sa, b, i, j); \
 					if ( opb tmp ) { \
 						sr->bbody[i] = tmp; \
 					} \
@@ -691,10 +693,10 @@ km_mat_##mm##_row(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 			} \
 		} \
 	} else if ( sr->vtype == VT_VALUE ) { \
-		for ( int i=0; i<sr->m; i++ ) { \
+		for ( size_t i=0; i<sr->m; i++ ) { \
 			sr->vbody[i] = ENTITY(sa, v, i, 0); \
-			for ( int j=1; j<sa->n; j++ ) { \
-				VALUE tmp = ENTITY(sa, v, i, j); \
+			for ( size_t j=1; j<sa->n; j++ ) { \
+				const VALUE tmp = ENTITY(sa, v, i, j); \
 				if ( RTEST(rb_funcall(sr->vbody[i], op_id, 1, tmp)) ) { \
 					sr->vbody[i] = tmp; \
 				} \
@@ -743,7 +745,7 @@ kmm_mat_max_destl(VALUE self, VALUE vr)
 		km_smat_copy(sr, sa);
 		return self;
 	} else {
-		rb_raise(km_eDim, "max/min from size (%d, %d) to size (%d, %d) is not defined", sa->m, sa->n, sr->m, sr->n);
+		rb_raise(km_eDim, "max/min from size (%zu, %zu) to size (%zu, %zu) is not defined", sa->m, sa->n, sr->m, sr->n);
 	}
 }
 // the argument is a Symbol which specify the axis
@@ -807,7 +809,7 @@ kmm_mat_min_destl(VALUE self, VALUE vr)
 		km_smat_copy(sr, sa);
 		return self;
 	} else {
-		rb_raise(km_eDim, "max/min from size (%d, %d) to size (%d, %d) is not defined", sa->m, sa->n, sr->m, sr->n);
+		rb_raise(km_eDim, "max/min from size (%zu, %zu) to size (%zu, %zu) is not defined", sa->m, sa->n, sr->m, sr->n);
 	}
 }
 VALUE
@@ -837,8 +839,8 @@ kmm_mat_min(int argc, VALUE *argv, VALUE self)
 }
 
 struct km_amm_arg {
-	int i;
-	int j;
+	size_t i;
+	size_t j;
 	union {
 		double dmm;
 		int imm;
@@ -847,7 +849,7 @@ struct km_amm_arg {
 	};
 };
 static void
-km_argmax_func_d(double *ea, int i, int j, void *data)
+km_argmax_func_d(double *ea, size_t i, size_t j, void *data)
 {
 	struct km_amm_arg *arg = (struct km_amm_arg *)data;
 	if ( arg->dmm < *ea ) {
@@ -855,7 +857,7 @@ km_argmax_func_d(double *ea, int i, int j, void *data)
 	}
 }
 static void
-km_argmax_func_i(int *ea, int i, int j, void *data)
+km_argmax_func_i(int *ea, size_t i, size_t j, void *data)
 {
 	struct km_amm_arg *arg = (struct km_amm_arg *)data;
 	if ( arg->imm < *ea ) {
@@ -863,7 +865,7 @@ km_argmax_func_i(int *ea, int i, int j, void *data)
 	}
 }
 static void
-km_argmax_func_b(bool *ea, int i, int j, void *data)
+km_argmax_func_b(bool *ea, size_t i, size_t j, void *data)
 {
 	struct km_amm_arg *arg = (struct km_amm_arg *)data;
 	if ( (!(arg->bmm)) && *ea ) {
@@ -871,7 +873,7 @@ km_argmax_func_b(bool *ea, int i, int j, void *data)
 	}
 }
 static void
-km_argmax_func_v(VALUE *ea, int i, int j, void *data)
+km_argmax_func_v(VALUE *ea, size_t i, size_t j, void *data)
 {
 	struct km_amm_arg *arg = (struct km_amm_arg *)data;
 	if ( RTEST(rb_funcall(arg->vmm, id_op_lt, 1, *ea)) ) {
@@ -885,38 +887,38 @@ km_mat_arg##mm##_all(SMAT *sr, SMAT *sa, VALUE va) \
 	if ( sa->vtype == VT_DOUBLE ) { \
 		struct km_amm_arg data = {0, 0, {.dmm = sa->dbody[0]}}; \
 		km_smat_each_with_index_d(sa, km_arg##mm##_func_d, &data); \
-		sr->ibody[0] = INDEX(sa, data.i, data.j); \
+		sr->ibody[0] = INDEXi(sa, data.i, data.j); \
 		if ( VECTOR_P(sa) ) { \
-			return INT2NUM(MAX(data.i, data.j)); \
+			return ZU2NUM(MAX(data.i, data.j)); \
 		} else { \
-			return rb_ary_new3(2, INT2NUM(data.i), INT2NUM(data.j)); \
+			return rb_ary_new3(2, ZU2NUM(data.i), ZU2NUM(data.j)); \
 		} \
 	} else if ( sa->vtype == VT_INT ) { \
 		struct km_amm_arg data = {0, 0, {.imm = sa->ibody[0]}}; \
 		km_smat_each_with_index_i(sa, km_arg##mm##_func_i, &data); \
-		sr->ibody[0] = INDEX(sa, data.i, data.j); \
+		sr->ibody[0] = INDEXi(sa, data.i, data.j); \
 		if ( VECTOR_P(sa) ) { \
-			return INT2NUM(MAX(data.i, data.j)); \
+			return ZU2NUM(MAX(data.i, data.j)); \
 		} else { \
-			return rb_ary_new3(2, INT2NUM(data.i), INT2NUM(data.j)); \
+			return rb_ary_new3(2, ZU2NUM(data.i), ZU2NUM(data.j)); \
 		} \
 	} else if ( sa->vtype == VT_BOOL ) { \
 		struct km_amm_arg data = {0, 0, {.bmm = sa->bbody[0]}}; \
 		km_smat_each_with_index_b(sa, km_arg##mm##_func_b, &data); \
-		sr->ibody[0] = INDEX(sa, data.i, data.j); \
+		sr->ibody[0] = INDEXi(sa, data.i, data.j); \
 		if ( VECTOR_P(sa) ) { \
-			return INT2NUM(MAX(data.i, data.j)); \
+			return ZU2NUM(MAX(data.i, data.j)); \
 		} else { \
-			return rb_ary_new3(2, INT2NUM(data.i), INT2NUM(data.j)); \
+			return rb_ary_new3(2, ZU2NUM(data.i), ZU2NUM(data.j)); \
 		} \
 	} else if ( sa->vtype == VT_VALUE ) { \
 		struct km_amm_arg data = {0, 0, {.vmm = sa->vbody[0]}}; \
 		km_smat_each_with_index_v(sa, km_arg##mm##_func_v, &data); \
-		sr->ibody[0] = INDEX(sa, data.i, data.j); \
+		sr->ibody[0] = INDEXi(sa, data.i, data.j); \
 		if ( VECTOR_P(sa) ) { \
-			return INT2NUM(MAX(data.i, data.j)); \
+			return ZU2NUM(MAX(data.i, data.j)); \
 		} else { \
-			return rb_ary_new3(2, INT2NUM(data.i), INT2NUM(data.j)); \
+			return rb_ary_new3(2, ZU2NUM(data.i), ZU2NUM(data.j)); \
 		} \
 	} else { \
 		VALUE omat = kmm_mat_to_omat(va); \
@@ -927,44 +929,44 @@ static VALUE \
 km_mat_arg##mm##_col(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 { \
 	if ( sa->vtype == VT_DOUBLE ) { \
-		for ( int j=0; j<sr->n; j++ ) { \
+		for ( size_t j=0; j<sr->n; j++ ) { \
 			sr->ibody[j] = 0; double mm = ENTITY(sa, d, 0, j); \
-			for ( int i=0; i<sa->m; i++ ) { \
-				double tmp = ENTITY(sa, d, i, j); \
+			for ( size_t i=0; i<sa->m; i++ ) { \
+				const double tmp = ENTITY(sa, d, i, j); \
 				if ( mm op tmp ) { \
-					sr->ibody[j] = i; mm = tmp; \
+					sr->ibody[j] = s2i(i); mm = tmp; \
 				} \
 			} \
 		} \
 	} else if ( sa->vtype == VT_INT ) { \
-		for ( int j=0; j<sr->n; j++ ) { \
+		for ( size_t j=0; j<sr->n; j++ ) { \
 			sr->ibody[j] = 0; int mm = ENTITY(sa, i, 0, j); \
-			for ( int i=0; i<sa->m; i++ ) { \
-				int tmp = ENTITY(sa, i, i, j); \
+			for ( size_t i=0; i<sa->m; i++ ) { \
+				const int tmp = ENTITY(sa, i, i, j); \
 				if ( mm op tmp ) { \
-					sr->ibody[j] = i; mm = tmp; \
+					sr->ibody[j] = s2i(i); mm = tmp; \
 				} \
 			} \
 		} \
 	} else if ( sa->vtype == VT_BOOL ) { \
-		for ( int j=0; j<sr->n; j++ ) { \
+		for ( size_t j=0; j<sr->n; j++ ) { \
 			sr->ibody[j] = 0; bool mm = ENTITY(sa, b, 0, j); \
 			if ( !( opb mm ) ) { \
-				for ( int i=0; i<sa->m; i++ ) { \
-					int tmp = ENTITY(sa, b, i, j); \
+				for ( size_t i=0; i<sa->m; i++ ) { \
+					const bool tmp = ENTITY(sa, b, i, j); \
 					if ( opb tmp ) { \
-						sr->bbody[j] = i; break; \
+						sr->ibody[j] = s2i(i); mm = tmp; break; \
 					} \
 				} \
 			} \
 		} \
 	} else if ( sa->vtype == VT_VALUE ) { \
-		for ( int j=0; j<sr->n; j++ ) { \
+		for ( size_t j=0; j<sr->n; j++ ) { \
 			sr->ibody[j] = 0; VALUE mm = ENTITY(sa, v, 0, j); \
-			for ( int i=0; i<sa->m; i++ ) { \
-				VALUE tmp = ENTITY(sa, v, i, j); \
+			for ( size_t i=0; i<sa->m; i++ ) { \
+				const VALUE tmp = ENTITY(sa, v, i, j); \
 				if ( rb_funcall(mm, op_id, 1, tmp) ) { \
-					sr->ibody[j] = i; mm = tmp; \
+					sr->ibody[j] = s2i(i); mm = tmp; \
 				} \
 			} \
 		} \
@@ -978,44 +980,44 @@ static VALUE \
 km_mat_arg##mm##_row(VALUE self, SMAT *sr, SMAT *sa, VALUE va) \
 { \
 	if ( sa->vtype == VT_DOUBLE ) { \
-		for ( int i=0; i<sr->m; i++ ) { \
+		for ( size_t i=0; i<sr->m; i++ ) { \
 			sr->ibody[i] = 0; double mm = ENTITY(sa, d, i, 0); \
-			for ( int j=1; j<sa->n; j++ ) { \
-				double tmp = ENTITY(sa, d, i, j); \
+			for ( size_t j=1; j<sa->n; j++ ) { \
+				const double tmp = ENTITY(sa, d, i, j); \
 				if ( mm op tmp ) { \
-					sr->ibody[i] = j; mm = tmp; \
+					sr->ibody[i] = s2i(j); mm = tmp; \
 				} \
 			} \
 		} \
 	} else if ( sa->vtype == VT_INT ) { \
-		for ( int i=0; i<sr->m; i++ ) { \
+		for ( size_t i=0; i<sr->m; i++ ) { \
 			sr->ibody[i] = 0; int mm = ENTITY(sa, i, i, 0); \
-			for ( int j=1; j<sa->n; j++ ) { \
-				int tmp = ENTITY(sa, i, i, j); \
+			for ( size_t j=1; j<sa->n; j++ ) { \
+				const int tmp = ENTITY(sa, i, i, j); \
 				if ( mm op tmp ) { \
-					sr->ibody[i] = j; mm = tmp; \
+					sr->ibody[i] = s2i(j); mm = tmp; \
 				} \
 			} \
 		} \
 	} else if ( sa->vtype == VT_BOOL ) { \
-		for ( int i=0; i<sr->m; i++ ) { \
-			sr->ibody[i] = 0; int mm = ENTITY(sa, b, i, 0); \
+		for ( size_t i=0; i<sr->m; i++ ) { \
+			sr->ibody[i] = 0; bool mm = ENTITY(sa, b, i, 0); \
 			if ( ! (opb mm) ) { \
-				for ( int j=1; j<sa->n; j++ ) { \
-					int tmp = ENTITY(sa, i, i, j); \
+				for ( size_t j=1; j<sa->n; j++ ) { \
+					const bool tmp = ENTITY(sa, i, i, j); \
 					if ( opb tmp ) { \
-						sr->ibody[i] = j; break; \
+						sr->ibody[i] = s2i(j); mm=tmp; break; \
 					} \
 				} \
 			} \
 		} \
 	} else if ( sa->vtype == VT_VALUE ) { \
-		for ( int i=0; i<sr->m; i++ ) { \
+		for ( size_t i=0; i<sr->m; i++ ) { \
 			sr->ibody[i] = 0; VALUE mm = ENTITY(sa, v, i, 0); \
-			for ( int j=1; j<sa->n; j++ ) { \
-				VALUE tmp = ENTITY(sa, v, i, j); \
+			for ( size_t j=1; j<sa->n; j++ ) { \
+				const VALUE tmp = ENTITY(sa, v, i, j); \
 				if ( rb_funcall(mm, op_id, 1, tmp) ) { \
-					sr->ibody[i] = j; mm = tmp; \
+					sr->ibody[i] = s2i(j); mm = tmp; \
 				} \
 			} \
 		} \
@@ -1047,7 +1049,7 @@ kmm_mat_argmax_destl(VALUE self, VALUE va)
 	} else if ( sr->m == sa->m && sr->n == 1 ) {
 		return km_mat_argmax_row(self, sr, sa, va);
 	} else {
-		rb_raise(km_eDim, "argmax/min from size (%d, %d) to size (%d, %d) is not defined", sa->m, sa->n, sr->m, sr->n);
+		rb_raise(km_eDim, "argmax/min from size (%zu, %zu) to size (%zu, %zu) is not defined", sa->m, sa->n, sr->m, sr->n);
 	}
 }
 VALUE
@@ -1075,7 +1077,7 @@ kmm_mat_argmax(int argc, VALUE *argv, VALUE va)
 }
 
 static void
-km_argmin_func_d(double *ea, int i, int j, void *data)
+km_argmin_func_d(double *ea, size_t i, size_t j, void *data)
 {
 	struct km_amm_arg *arg = (struct km_amm_arg *)data;
 	if ( arg->dmm > *ea ) {
@@ -1083,7 +1085,7 @@ km_argmin_func_d(double *ea, int i, int j, void *data)
 	}
 }
 static void
-km_argmin_func_i(int *ea, int i, int j, void *data)
+km_argmin_func_i(int *ea, size_t i, size_t j, void *data)
 {
 	struct km_amm_arg *arg = (struct km_amm_arg *)data;
 	if ( arg->imm > *ea ) {
@@ -1091,7 +1093,7 @@ km_argmin_func_i(int *ea, int i, int j, void *data)
 	}
 }
 static void
-km_argmin_func_b(bool *ea, int i, int j, void *data)
+km_argmin_func_b(bool *ea, size_t i, size_t j, void *data)
 {
 	struct km_amm_arg *arg = (struct km_amm_arg *)data;
 	if ( (arg->bmm) && (!(*ea)) ) {
@@ -1099,7 +1101,7 @@ km_argmin_func_b(bool *ea, int i, int j, void *data)
 	}
 }
 static void
-km_argmin_func_v(VALUE *ea, int i, int j, void *data)
+km_argmin_func_v(VALUE *ea, size_t i, size_t j, void *data)
 {
 	struct km_amm_arg *arg = (struct km_amm_arg *)data;
 	if ( RTEST(rb_funcall(arg->vmm, id_op_gt, 1, *ea)) ) {
@@ -1128,7 +1130,7 @@ kmm_mat_argmin_destl(VALUE self, VALUE va)
 	} else if ( sr->m == sa->m && sr->n == 1 ) {
 		return km_mat_argmin_row(self, sr, sa, va);
 	} else {
-		rb_raise(km_eDim, "argmax/min from size (%d, %d) to size (%d, %d) is not defined", sa->m, sa->n, sr->m, sr->n);
+		rb_raise(km_eDim, "argmax/min from size (%zu, %zu) to size (%zu, %zu) is not defined", sa->m, sa->n, sr->m, sr->n);
 	}
 }
 VALUE

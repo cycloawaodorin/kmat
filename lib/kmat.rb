@@ -1,4 +1,4 @@
-require "kmat/version"
+require_relative "./kmat/version"
 
 class Mat
 	include Enumerable
@@ -10,11 +10,11 @@ class << Mat
 	end
 end
 
-require "kmat/kmat"
-require "kmat/arith"
-require "kmat/accessor"
-require "kmat/linalg"
-require "kmat/logical"
-require "kmat/misc"
-require "kmat/random"
-require "kmat/statistics"
+require_relative "./kmat/kmat"
+require_relative "./kmat/arith"
+require_relative "./kmat/accessor"
+require_relative "./kmat/linalg"
+require_relative "./kmat/logical"
+require_relative "./kmat/misc"
+require_relative "./kmat/random"
+require_relative "./kmat/statistics"

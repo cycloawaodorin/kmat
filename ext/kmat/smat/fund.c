@@ -2,7 +2,7 @@
 
 // make a (m, n)-matrix with value type vt
 VALUE
-km_Mat(int m, int n, VTYPE vt)
+km_Mat(size_t m, size_t n, VTYPE vt)
 {
 	VALUE ret = km_Mat_alloc(km_cMat);
 	SMAT *smat = km_mat2smat(ret);
@@ -16,9 +16,9 @@ km_Mat(int m, int n, VTYPE vt)
 // otherwise, the return is filled by 0
 // if a block given, the (i, j)-th element is a return of yield(i, j)
 #define DEFINE_INIT_LOOP_FUNC(id, type, func) static void \
-km_initialize_loop_func_##id(type *elm, int i, int j, void *null) \
+km_initialize_loop_func_##id(type *elm, size_t i, size_t j, void *null) \
 {\
-	*elm = func( rb_yield( rb_ary_new3(2, INT2NUM(i), INT2NUM(j)) ) ); \
+	*elm = func( rb_yield( rb_ary_new3(2, ZU2NUM(i), ZU2NUM(j)) ) ); \
 }
 DEFINE_INIT_LOOP_FUNC(d, double, NUM2DBL)
 DEFINE_INIT_LOOP_FUNC(z, COMPLEX, km_v2c)
@@ -34,7 +34,7 @@ static VALUE
 km_initialize_loop(VALUE varg)
 {
 	struct km_initialize_loop_arg *arg = (struct km_initialize_loop_arg *)varg;
-	km_smat_alloc_body(arg->smat, NUM2INT(arg->argv[0]), NUM2INT(arg->argv[1]), arg->vt);
+	km_smat_alloc_body(arg->smat, NUM2ZU(arg->argv[0]), NUM2ZU(arg->argv[1]), arg->vt);
 	if ( rb_block_given_p() ) {
 		VT_SWITCH( arg->vt,
 			km_smat_each_with_index_d(arg->smat, km_initialize_loop_func_d, NULL);,
@@ -45,8 +45,8 @@ km_initialize_loop(VALUE varg)
 		);
 	} else {
 		if ( arg->vt == VT_VALUE ) {
-			for ( int i=0; i<arg->smat->m; i++ ) {
-				for ( int j=0; j<arg->smat->n; j++ ) {
+			for ( size_t i=0; i<arg->smat->m; i++ ) {
+				for ( size_t j=0; j<arg->smat->n; j++ ) {
 					arg->smat->vbody[i+j*arg->smat->ld] = Qnil;
 				}
 			}
@@ -104,15 +104,15 @@ kmm_mat_reshape(VALUE self, VALUE vm, VALUE vn)
 	if ( smat->stype == ST_SSUB ) {
 		rb_raise(km_eShare, "can't reshape submatrix. try detach before reshaping");
 	}
-	int m = NUM2INT(vm), n = NUM2INT(vn);
-	km_check_positive(m, n);
+	const size_t m = NUM2ZU(vm), n = NUM2ZU(vn);
+	km_check_size2(m, n);
 	if ( m*n == LENGTH(smat) ) {
 		smat->trans = false;
 		smat->m = m; smat->n = n;
 		smat->ld = m;
 		return self;
 	} else {
-		rb_raise(km_eDim, "the length of the matrix must no be changed, (%d, %d) -> (%d, %d) is unavailable",
+		rb_raise(km_eDim, "the length of the matrix must no be changed, (%zu, %zu) -> (%zu, %zu) is unavailable",
 			smat->m, smat->n, m, n);
 	}
 }
@@ -129,7 +129,7 @@ kmm_mat_resize(VALUE self, VALUE vm, VALUE vn)
 	} else if ( kmm_mat_have_submatrix_p(self) ) {
 		rb_raise(km_eShare, "can't resize supermatrix. try detach before reshaping");
 	}
-	int m = NUM2INT(vm), n = NUM2INT(vn);
+	const size_t m = NUM2ZU(vm), n = NUM2ZU(vn);
 	if ( m*n == LENGTH(smat) ) {
 		return kmm_mat_reshape(self, vm, vn);
 	} else {
@@ -146,7 +146,7 @@ kmm_mat_transpose_dest(VALUE self)
 	km_check_frozen(self);
 	SMAT *smat = km_mat2smat(self);
 	smat->trans = !(smat->trans);
-	SWAP(int, smat->m, smat->n);
+	SWAP(size_t, smat->m, smat->n);
 	return self;
 }
 
@@ -200,7 +200,7 @@ kmm_mat_zero(VALUE self)
 	type one; \
 }; \
 static void \
-km_eye_func_##id(type *elm, int i, int j, void *data_) \
+km_eye_func_##id(type *elm, size_t i, size_t j, void *data_) \
 {\
 	struct km_eye_##id *data = (struct km_eye_##id *)data_; \
 	if ( i == j ) { \
@@ -293,11 +293,11 @@ kmm_mat__randn0(VALUE self, VALUE random)
 		km_fill_normal(LENGTH(smat), smat->dbody, random);
 	} else if ( smat->stype == ST_SSUB ) {
 		if ( smat->trans ) {
-			for ( int i=0; i<smat->m; i++ ) {
+			for ( size_t i=0; i<smat->m; i++ ) {
 				km_fill_normal(smat->n, smat->dbody+i*smat->ld, random);
 			}
 		} else {
-			for ( int i=0; i<smat->n; i++ ) {
+			for ( size_t i=0; i<smat->n; i++ ) {
 				km_fill_normal(smat->m, smat->dbody+i*smat->ld, random);
 			}
 		}
@@ -341,9 +341,9 @@ kmm_mat_each(VALUE self)
 
 // invoke yield(element, i, j) for all the elements
 #define DEFINE_EACH_WI2_FUNC(id, type, func) static void \
-km_each_with_index2_func_##id(type *elm, int i, int j, void *null) \
+km_each_with_index2_func_##id(type *elm, size_t i, size_t j, void *null) \
 { \
-	rb_yield(rb_ary_new3(3, func(*elm), INT2NUM(i), INT2NUM(j))); \
+	rb_yield(rb_ary_new3(3, func(*elm), ZU2NUM(i), ZU2NUM(j))); \
 }
 DEFINE_EACH_WI2_FUNC(d, double, rb_float_new)
 DEFINE_EACH_WI2_FUNC(z, COMPLEX, km_c2v)
@@ -401,9 +401,9 @@ kmm_mat_mmap_dest(VALUE self)
 
 // invoke yield(element, i, j) and replace the element by the return for all the elements
 #define DEFINE_MMAP_WI2_FUNC(id, type, func, func2) static void \
-km_mmap_with_index2_func_##id(type *elm, int i, int j, void *null) \
+km_mmap_with_index2_func_##id(type *elm, size_t i, size_t j, void *null) \
 { \
-	*elm = func2(rb_yield(rb_ary_new3(3, func(*elm), INT2NUM(i), INT2NUM(j)))); \
+	*elm = func2(rb_yield(rb_ary_new3(3, func(*elm), ZU2NUM(i), ZU2NUM(j)))); \
 }
 DEFINE_MMAP_WI2_FUNC(d, double, rb_float_new, NUM2DBL)
 DEFINE_MMAP_WI2_FUNC(z, COMPLEX, km_c2v, km_v2c)
@@ -430,9 +430,9 @@ kmm_mat_mmap_with_index2_dest(VALUE self)
 }
 
 // make a row-major Array of Arrays (Mat#to_a is Enumerable#to_a and it is not the same as this)
-#define TA_LOOP(id, func) for ( int i=0; i<smat->m; i++ ) { \
-	VALUE row = rb_ary_new2(smat->n); \
-	for ( int j=0; j<smat->n; j++ ) { \
+#define TA_LOOP(id, func) for ( size_t i=0; i<smat->m; i++ ) { \
+	VALUE row = rb_ary_new2(s2l(smat->n)); \
+	for ( size_t j=0; j<smat->n; j++ ) { \
 		rb_ary_push(row, func(smat->id##body[INDEX(smat, i, j)])); \
 	} \
 	rb_ary_push(ret, row); \
@@ -441,7 +441,7 @@ VALUE
 kmm_mat_to_ary(VALUE self)
 {
 	SMAT *smat = km_mat2smat(self);
-	VALUE ret = rb_ary_new2(smat->m);
+	VALUE ret = rb_ary_new2(s2l(smat->m));
 	VT_SWITCH( smat->vtype,
 		TA_LOOP(d, rb_float_new),
 		TA_LOOP(z, km_c2v),
@@ -453,9 +453,9 @@ kmm_mat_to_ary(VALUE self)
 }
 
 // make a String
-#define TS_LOOP(tid, func) for ( int i=0; i<smat->m; i++ ) { \
-	VALUE row = rb_ary_new2(smat->n); \
-	for ( int j=0; j<smat->n; j++ ) { \
+#define TS_LOOP(tid, func) for ( size_t i=0; i<smat->m; i++ ) { \
+	VALUE row = rb_ary_new2(s2l(smat->n)); \
+	for ( size_t j=0; j<smat->n; j++ ) { \
 		rb_ary_push(row, rb_funcall(func(ENTITY(smat, tid, i, j)), id, 0)); \
 	} \
 	rb_str_cat2(ret, " ["); \
@@ -481,9 +481,9 @@ km_smat_to_s(const SMAT *smat, ID id, VALUE vtsym, VALUE stsym)
 	rb_str_cat2(ret, ")");
 	return ret;
 }
-#define TSP_LOOP(tid, func) for ( int i=0; i<smat->m; i++ ) { \
-	VALUE row = rb_ary_new2(smat->n); \
-	for ( int j=0; j<smat->n; j++ ) { \
+#define TSP_LOOP(tid, func) for ( size_t i=0; i<smat->m; i++ ) { \
+	VALUE row = rb_ary_new2(s2l(smat->n)); \
+	for ( size_t j=0; j<smat->n; j++ ) { \
 		rb_ary_push(row, rb_funcall(format, id_op_percent, 1, func(ENTITY(smat, tid, i, j)))); \
 	} \
 	rb_str_cat2(ret, " ["); \
@@ -536,15 +536,15 @@ kmm_mat_symmetrize_dest(VALUE self)
 		rb_raise(km_eDim, "non-square matrix cannot be symmetrized");
 	}
 	if ( smat->vtype == VT_DOUBLE ) {
-		for ( int i=0; i<smat->m-1; i++ ) {
-			for ( int j=i+1; j<smat->m; j++ ) {
+		for ( size_t i=0; i<smat->m-1; i++ ) {
+			for ( size_t j=i+1; j<smat->m; j++ ) {
 				smat->dbody[i+j*smat->ld] = ( smat->dbody[i+j*smat->ld] + smat->dbody[j+i*smat->ld] ) * 0.5;
 				smat->dbody[j+i*smat->ld] = smat->dbody[i+j*smat->ld];
 			}
 		}
 	} else if ( smat->vtype == VT_COMPLEX ) {
-		for ( int i=0; i<smat->m-1; i++ ) {
-			for ( int j=i+1; j<smat->m; j++ ) {
+		for ( size_t i=0; i<smat->m-1; i++ ) {
+			for ( size_t j=i+1; j<smat->m; j++ ) {
 				smat->zbody[i+j*smat->ld] = ( smat->zbody[i+j*smat->ld] + smat->zbody[j+i*smat->ld] ) * 0.5;
 				smat->zbody[j+i*smat->ld] = smat->zbody[i+j*smat->ld];
 			}
@@ -587,8 +587,8 @@ km_near_v(VALUE a, VALUE b)
 		return RTEST(rb_funcall(a, id_op_eq, 1, b));
 	}
 }
-#define SYM_BODY(id, func) for ( int i=0; i<(smat->n)-1; i++ ) { \
-	for ( int j=i+1; j<(smat->n); j++ ) { \
+#define SYM_BODY(id, func) for ( size_t i=0; i<(smat->n)-1; i++ ) { \
+	for ( size_t j=i+1; j<(smat->n); j++ ) { \
 		if ( !func(smat->id##body[i+j*(smat->ld)], smat->id##body[j+i*(smat->ld)]) ) { \
 			return Qfalse; \
 		} \
@@ -622,7 +622,7 @@ kmm_mat_symmetry_p(int argc, VALUE *argv, VALUE self)
 
 // judge whether `self' is near to `other'
 // consider a is near to b iff |a-b| < tol
-// the default value of tol is (maximub absolute value of each element) * max(m, n) * eps
+// the default value of tol is (maximum absolute value of each element) * max(m, n) * eps
 static bool
 km_near_abs_d(double a, double b, double tol)
 {
@@ -687,7 +687,7 @@ kmm_mat_near_p(int argc, VALUE *argv, VALUE self)
 	struct km_near_arg data = {true, 0.0};
 	if ( argc == 1 ) {
 		double ns = NUM2DBL(kmm_mat_norm_einf(self)), no = NUM2DBL(kmm_mat_norm_einf(argv[0]));
-		data.tol = MAX(ns, no) * MAX(ss->m, ss->n) * DBL_EPSILON;
+		data.tol = MAX(ns, no) * (double)MAX(ss->m, ss->n) * DBL_EPSILON;
 	} else {
 		data.tol = NUM2DBL(argv[1]);
 	}
@@ -698,5 +698,5 @@ kmm_mat_near_p(int argc, VALUE *argv, VALUE self)
 		km_smat_each2_b(ss, so, km_near_func_b, (void *)&data);,
 		km_smat_each2_v(ss, so, km_near_func_v, (void *)&data);
 	);
-	return data.ret;
+	return TF2V(data.ret);
 }

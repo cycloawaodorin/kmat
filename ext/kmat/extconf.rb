@@ -48,6 +48,9 @@ File.open('./__Makefile__temp__', 'w') do |f|
 		else
 			line.sub!(/^debugflags.+/, 'debugflags =')
 		end
+		line.gsub!(/\-I\$\(hdrdir\)/, '-isystem$(hdrdir)')
+		line.gsub!(/\-I\$\(arch\_hdrdir\)/, '-isystem$(arch_hdrdir)')
+		line.gsub!(/\-I\//, '-isystem/')
 		f.puts line
 	end
 end

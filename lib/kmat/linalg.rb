@@ -27,8 +27,7 @@ class Mat
 			if transpose
 				tls(b)
 			else
-				n = self.col_size
-				Mat.new(n, n, :float).__send__(:_ls, b)
+				Mat.new(*b.shape, :float).__send__(:_ls, self, b)
 			end
 		end
 	end

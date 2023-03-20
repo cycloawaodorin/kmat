@@ -12,8 +12,8 @@ km_rand_normal(VALUE random)
 		return NUM2DBL(rb_ivar_get(random, id_iv_kmat_stored_value));
 	} else {
 		rb_ivar_set(random, id_iv_kmat_stored, Qtrue);
-		double sqrt_m2_log_x = sqrt(-2.0*log1p(-NUM2DBL(rb_funcall(random, id_rand, 0))));
-		double two_pi_y = M_2PI*NUM2DBL(rb_funcall(random, id_rand, 0));
+		const double sqrt_m2_log_x = sqrt(-2.0*log1p(-NUM2DBL(rb_funcall(random, id_rand, 0))));
+		const double two_pi_y = M_2PI*NUM2DBL(rb_funcall(random, id_rand, 0));
 		rb_ivar_set(random, id_iv_kmat_stored_value, rb_float_new(sqrt_m2_log_x*sin(two_pi_y)));
 		return sqrt_m2_log_x*cos(two_pi_y);
 	}
@@ -22,9 +22,9 @@ km_rand_normal(VALUE random)
 // replace ary[0..(len-1)] by random numbers which follow N(0, 1)
 // `random' is an instance of Random
 void
-km_fill_normal(int len, double *ary, VALUE random)
+km_fill_normal(size_t len, double *ary, VALUE random)
 {
-	int i;
+	size_t i;
 	double sqrt_m2_log_x, two_pi_y;
 	len--;
 	if (RTEST(rb_ivar_get(random, id_iv_kmat_stored))) {
@@ -66,7 +66,7 @@ km_random_randn(int argc, VALUE *argv, VALUE random)
 void
 km_Mat_rand_init(void)
 {
-	kmgv_mat_random = rb_const_get(rb_cRandom, id_DEFAULT);
+	kmgv_mat_random = rb_funcall(rb_cRandom, id_new, 0);
 	rb_define_variable("$MatRandom", &kmgv_mat_random);
 	rb_define_method(rb_cRandom, "randn", km_random_randn, -1);
 }

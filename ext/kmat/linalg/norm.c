@@ -1,6 +1,6 @@
 #include "../kmat.h"
 
-#define SET_LD(ldx, smat) int ldx; \
+#define SET_LD(ldx, smat) size_t ldx; \
 	if ( smat->n == 1 ) { \
 		if ( smat->trans ) { \
 			ldx = smat->ld; \
@@ -14,23 +14,37 @@
 			ldx = smat->ld; \
 		} \
 	}
+#define SET_LDi(ldx, smat) int ldx; \
+	if ( smat->n == 1 ) { \
+		if ( smat->trans ) { \
+			ldx = s2i(smat->ld); \
+		} else { \
+			ldx = 1; \
+		} \
+	} else { \
+		if ( smat->trans ) { \
+			ldx = 1; \
+		} else { \
+			ldx = s2i(smat->ld); \
+		} \
+	}
 #define DEF_IPROD(id, type, mul, add, zero) static type \
 km_##id##mat_iprod(SMAT *sa, SMAT *sb) { \
 	type ret; \
 	SET_LD(lda, sa) \
 	SET_LD(ldb, sb) \
-	int len = LENGTH(sa); \
+	const size_t len = LENGTH(sa); \
 	if ( len == 0 ) { return zero; } \
 	if ( sa->stype == ST_RSUB ) { \
 		if ( sb->stype == ST_RSUB ) { \
 			ret = mul( *(sa->id##pbody[0]), *(sb->id##pbody[0]) ); \
-			for ( int i=1; i<len; i++ ) { \
+			for ( size_t i=1; i<len; i++ ) { \
 				type temp = mul( *(sa->id##pbody[i*lda]), *(sb->id##pbody[i*ldb]) ); \
 				ret = add(ret, temp); \
 			} \
 		} else { \
 			ret = mul( *(sa->id##pbody[0]), (sb->id##body[0]) ); \
-			for ( int i=1; i<len; i++ ) { \
+			for ( size_t i=1; i<len; i++ ) { \
 				type temp = mul( *(sa->id##pbody[i*lda]), (sb->id##body[i*ldb]) ); \
 				ret = add(ret, temp); \
 			} \
@@ -38,13 +52,13 @@ km_##id##mat_iprod(SMAT *sa, SMAT *sb) { \
 	} else { \
 		if ( sb->stype == ST_RSUB ) { \
 			ret = mul( (sa->id##body[0]), *(sb->id##pbody[0]) ); \
-			for ( int i=1; i<len; i++ ) { \
+			for ( size_t i=1; i<len; i++ ) { \
 				type temp = mul( (sa->id##body[i*lda]), *(sb->id##pbody[i*ldb]) ); \
 				ret = add(ret, temp); \
 			} \
 		} else { \
 			ret = mul( (sa->id##body[0]), (sb->id##body[0]) ); \
-			for ( int i=1; i<len; i++ ) { \
+			for ( size_t i=1; i<len; i++ ) { \
 				type temp = mul( (sa->id##body[i*lda]), (sb->id##body[i*ldb]) ); \
 				ret = add(ret, temp); \
 			} \
@@ -68,9 +82,9 @@ km_dmat_iprodb(SMAT *sa, SMAT *sb)
 	if ( sa->stype == ST_RSUB || sb->stype == ST_RSUB ) {
 		return km_dmat_iprod(sa, sb);
 	}
-	SET_LD(lda, sa)
-	SET_LD(ldb, sb)
-	int n = LENGTH(sa);
+	SET_LDi(lda, sa)
+	SET_LDi(ldb, sb)
+	const int n = LENGTHi(sa);
 	return ddot_(&n, sa->dbody, &lda, sb->dbody, &ldb);
 }
 static COMPLEX
@@ -79,9 +93,9 @@ km_zmat_iprodb(SMAT *sa, SMAT *sb)
 	if ( sa->stype == ST_RSUB || sb->stype == ST_RSUB ) {
 		return km_zmat_iprod(sa, sb);
 	}
-	SET_LD(lda, sa)
-	SET_LD(ldb, sb)
-	int n = LENGTH(sa);
+	SET_LDi(lda, sa)
+	SET_LDi(ldb, sb)
+	const int n = LENGTHi(sa);
 	return zdotu_(&n, sa->zbody, &lda, sb->zbody, &ldb);
 }
 VALUE
@@ -91,7 +105,7 @@ kmm_mat__iprod(VALUE self, VALUE vb)
 	if ( !VECTOR_P(sa) || !VECTOR_P(sb) ) {
 		rb_raise(km_eDim, "both self and the argument must be vectors");
 	} else if ( LENGTH(sa) != LENGTH(sb) ) {
-		rb_raise(km_eDim, "dimensions must be the same (%d != %d)", LENGTH(sa), LENGTH(sb));
+		rb_raise(km_eDim, "dimensions must be the same (%zu != %zu)", LENGTH(sa), LENGTH(sb));
 	} else if ( sa->vtype != sb->vtype ) {
 		rb_raise(km_eVT, "value types must be the same");
 	}
@@ -141,16 +155,16 @@ kmm_mat_normf(VALUE self)
 	SMAT *smat = km_mat2smat(self);
 	if ( smat->vtype == VT_DOUBLE ) {
 		if ( smat->stype == ST_FULL ) {
-			int ione=1, n = LENGTH(smat);
+			const int ione=1, n = LENGTHi(smat);
 			return rb_float_new(dnrm2_(&n, smat->dbody, &ione));
 		} else if ( smat->stype == ST_SSUB ) {
-			int ione=1, lps, size; double ret=0.0;
+			const int ione=1; int size; size_t lps; double ret=0.0;
 			if ( smat->trans ) {
-				lps = smat->m; size = smat->n;
+				lps = smat->m; size = s2i(smat->n);
 			} else {
-				lps = smat->n; size = smat->m;
+				lps = smat->n; size = s2i(smat->m);
 			}
-			for ( int i=0; i<lps; i++ ) {
+			for ( size_t i=0; i<lps; i++ ) {
 				ret = hypot(ret, dnrm2_(&size, smat->dbody+i*(smat->ld), &ione));
 			}
 			return rb_float_new(ret);
@@ -161,16 +175,16 @@ kmm_mat_normf(VALUE self)
 		}
 	} else if ( smat->vtype == VT_COMPLEX ) {
 		if ( smat->stype == ST_FULL ) {
-			int ione=1, n = LENGTH(smat);
+			const int ione=1, n = LENGTHi(smat);
 			return rb_float_new(dznrm2_(&n, smat->zbody, &ione));
 		} else if ( smat->stype == ST_SSUB ) {
-			int ione=1, lps, size; double ret=0.0;
+			const int ione=1; int size; size_t lps; double ret=0.0;
 			if ( smat->trans ) {
-				lps = smat->m; size = smat->n;
+				lps = smat->m; size = s2i(smat->n);
 			} else {
-				lps = smat->n; size = smat->m;
+				lps = smat->n; size = s2i(smat->m);
 			}
-			for ( int i=0; i<lps; i++ ) {
+			for ( size_t i=0; i<lps; i++ ) {
 				ret = hypot(ret, dznrm2_(&size, smat->zbody+i*(smat->ld), &ione));
 			}
 			return rb_float_new(ret);
@@ -199,13 +213,13 @@ kmm_mat_normf(VALUE self)
 // L-1, L-infinity norm
 #define NORM1(type, id, m_ent, m, n, m_abs, m_add, m_cmp, x2v) \
 	type ret = m_abs(m_ent(smat, id, 0)); \
-	for ( int i=1; i<m; i++ ) { \
+	for ( size_t i=1; i<m; i++ ) { \
 		type foo = m_abs(m_ent(smat, id, i)); \
 		ret = m_add(ret, foo); \
 	} \
-	for ( int j=1; j<n; j++ ) { \
+	for ( size_t j=1; j<n; j++ ) { \
 		type bar = m_abs(m_ent(smat, id, j*(smat->ld))); \
-		for ( int i=1; i<m; i++ ) { \
+		for ( size_t i=1; i<m; i++ ) { \
 			type foo = m_abs(m_ent(smat, id, i+j*(smat->ld))); \
 			bar = m_add(bar, foo); \
 		} \
@@ -216,10 +230,10 @@ kmm_mat_normf(VALUE self)
 	if ( smat->stype == ST_RSUB ) { \
 		NORM1(double, id, ENTITYr0, m, n, m_abs, NUM_ADD, NUM_CMP, rb_float_new); \
 	} else { \
-		const int ione=1; \
-		double ret = bid##asum_(&(m), smat->id##body, &ione); \
-		for ( int j=1; j<n; j++ ) { \
-			double temp = bid##asum_(&(m), smat->id##body+(j*(smat->ld)), &ione); \
+		const int ione=1, m_i=s2i(m); \
+		double ret = bid##asum_(&m_i, smat->id##body, &ione); \
+		for ( size_t j=1; j<n; j++ ) { \
+			double temp = bid##asum_(&m_i, smat->id##body+(j*(smat->ld)), &ione); \
 			if ( ret < temp ) { ret = temp; } \
 		} \
 		return rb_float_new(ret); \
@@ -227,13 +241,13 @@ kmm_mat_normf(VALUE self)
 } while (0)
 #define NORMi(type, id, m_ent, m, n, m_abs, m_add, m_cmp, x2v) \
 	type ret = m_abs(m_ent(smat, id, 0)); \
-	for ( int j=1; j<n; j++ ) { \
+	for ( size_t j=1; j<n; j++ ) { \
 		type foo = m_abs(m_ent(smat, id, j*(smat->ld))); \
 		ret = m_add(ret, foo); \
 	} \
-	for ( int i=1; i<m; i++ ) { \
+	for ( size_t i=1; i<m; i++ ) { \
 		type bar = m_abs(m_ent(smat, id, i)); \
-		for ( int j=1; j<n; j++ ) { \
+		for ( size_t j=1; j<n; j++ ) { \
 			type foo = m_abs(m_ent(smat, id, i+j*(smat->ld))); \
 			bar = m_add(bar, foo); \
 		} \
@@ -244,9 +258,10 @@ kmm_mat_normf(VALUE self)
 	if ( smat->stype == ST_RSUB ) { \
 		NORMi(double, id, ENTITYr0, m, n, m_abs, NUM_ADD, NUM_CMP, rb_float_new); \
 	} else { \
-		double ret = bid##asum_(&(n), smat->id##body, &(smat->ld)); \
-		for ( int i=1; i<m; i++ ) { \
-			double temp = bid##asum_(&(n), smat->id##body+i, &(smat->ld)); \
+		const int ld=s2i(smat->ld), n_i=s2i(n); \
+		double ret = bid##asum_(&n_i, smat->id##body, &ld); \
+		for ( size_t i=1; i<m; i++ ) { \
+			const double temp = bid##asum_(&n_i, smat->id##body+i, &ld); \
 			if ( ret < temp ) { ret = temp; } \
 		} \
 		return rb_float_new(ret); \
@@ -350,16 +365,16 @@ kmm_mat_norm_e1(VALUE self)
 	SMAT *smat = km_mat2smat(self);
 	if ( smat->vtype == VT_DOUBLE ) {
 		if ( smat->stype == ST_FULL ) {
-			int ione = 1, n = LENGTH(smat);
+			const int ione = 1, n = LENGTHi(smat);
 			return rb_float_new(dasum_(&n, smat->dbody, &ione));
 		} else if ( smat->stype == ST_SSUB ) {
-			int ione = 1, lps, size; double ret = 0.0;
+			const int ione = 1; int size; size_t lps; double ret = 0.0;
 			if ( smat->trans ) {
-				lps = smat->m; size = smat->n;
+				lps = smat->m; size = s2i(smat->n);
 			} else {
-				lps = smat->n; size = smat->m;
+				lps = smat->n; size = s2i(smat->m);
 			}
-			for ( int i=0; i<lps; i++ ) {
+			for ( size_t i=0; i<lps; i++ ) {
 				ret += dasum_(&size, smat->dbody+(i*(smat->ld)), &ione);
 			}
 			return rb_float_new(ret);
@@ -370,16 +385,16 @@ kmm_mat_norm_e1(VALUE self)
 		}
 	} else if ( smat->vtype == VT_COMPLEX ) {
 		if ( smat->stype == ST_FULL ) {
-			int ione = 1, n = LENGTH(smat);
+			const int ione = 1, n = LENGTHi(smat);
 			return rb_float_new(dzasum_(&n, smat->zbody, &ione));
 		} else if ( smat->stype == ST_SSUB ) {
-			int ione = 1, lps, size; double ret = 0.0;
+			const int ione = 1; int size; size_t lps; double ret = 0.0;
 			if ( smat->trans ) {
-				lps = smat->m; size = smat->n;
+				lps = smat->m; size = s2i(smat->n);
 			} else {
-				lps = smat->n; size = smat->m;
+				lps = smat->n; size = s2i(smat->m);
 			}
-			for ( int i=0; i<lps; i++ ) {
+			for ( size_t i=0; i<lps; i++ ) {
 				ret += dzasum_(&size, smat->zbody+(i*(smat->ld)), &ione);
 			}
 			return rb_float_new(ret);
@@ -410,7 +425,7 @@ static void
 km_amax_d(double *ent, void *data)
 {
 	double *ret = (double *)data;
-	double temp = fabs(*ent);
+	const double temp = fabs(*ent);
 	if ( *ret < temp ) {
 		*ret = temp;
 	}
@@ -419,7 +434,7 @@ static void
 km_amax_z(COMPLEX *ent, void *data)
 {
 	double *ret = (double *)data;
-	double temp = cabs(*ent);
+	const double temp = cabs(*ent);
 	if ( *ret < temp ) {
 		*ret = temp;
 	}
@@ -428,7 +443,7 @@ static void
 km_amax_i(int *ent, void *data)
 {
 	int *ret = (int *)data;
-	int temp = ABS(*ent);
+	const int temp = ABS(*ent);
 	if ( *ret < temp ) {
 		*ret = temp;
 	}
@@ -443,7 +458,7 @@ static void
 km_amax_v(VALUE *ent, void *data)
 {
 	VALUE *ret = (VALUE *)data;
-	VALUE temp = rb_funcall(*ent, id_abs, 0);
+	const VALUE temp = rb_funcall(*ent, id_abs, 0);
 	if ( rb_funcall(*ret, id_op_lt, 1, temp) ) {
 		*ret = temp;
 	}
@@ -454,16 +469,16 @@ kmm_mat_norm_einf(VALUE self)
 	SMAT *smat = km_mat2smat(self);
 	if ( smat->vtype == VT_DOUBLE ) {
 		if ( smat->stype == ST_FULL ) {
-			int ione=1, n=LENGTH(smat);
+			const int ione=1, n=LENGTHi(smat);
 			return rb_float_new(fabs(smat->dbody[idamax_(&n, smat->dbody, &ione)-1]));
 		} else if ( smat->stype == ST_SSUB ) {
-			int ione=1, lps, size; double ret = 0.0;
+			const int ione=1; int size; size_t lps; double ret = 0.0;
 			if ( smat->trans ) {
-				lps = smat->m; size = smat->n;
+				lps = smat->m; size = s2i(smat->n);
 			} else {
-				lps = smat->n; size = smat->m;
+				lps = smat->n; size = s2i(smat->m);
 			}
-			for ( int i=0; i<lps; i++ ) {
+			for ( size_t i=0; i<lps; i++ ) {
 				double temp = fabs(smat->dbody[idamax_(&size, smat->dbody+(i*(smat->ld)), &ione)-1]);
 				if ( ret < temp ) { ret = temp; }
 			}
@@ -475,16 +490,16 @@ kmm_mat_norm_einf(VALUE self)
 		}
 	} else if ( smat->vtype == VT_COMPLEX ) {
 		if ( smat->stype == ST_FULL ) {
-			int ione=1, n=LENGTH(smat);
+			const int ione=1, n=LENGTHi(smat);
 			return rb_float_new(cabs(smat->zbody[izamax_(&n, smat->zbody, &ione)-1]));
 		} else if ( smat->stype == ST_SSUB ) {
-			int ione=1, lps, size; double ret = 0.0;
+			const int ione=1; int size; size_t lps; double ret = 0.0;
 			if ( smat->trans ) {
-				lps = smat->m; size = smat->n;
+				lps = smat->m; size = s2i(smat->n);
 			} else {
-				lps = smat->n; size = smat->m;
+				lps = smat->n; size = s2i(smat->m);
 			}
-			for ( int i=0; i<lps; i++ ) {
+			for ( size_t i=0; i<lps; i++ ) {
 				double temp = cabs(smat->zbody[izamax_(&size, smat->zbody+(i*(smat->ld)), &ione)-1]);
 				if ( ret < temp ) { ret = temp; }
 			}
@@ -522,7 +537,7 @@ km_norm2_body(VALUE data)
 {
 	struct km_norm2_arg *a = (struct km_norm2_arg *)data;
 	
-	int m = a->sa->m, n = a->sa->n;
+	int m = s2i(a->sa->m), n = s2i(a->sa->n);
 	
 	double opt; int lwork=-1, info;
 	char jobz[] = "N";
@@ -573,8 +588,8 @@ km__rcond2_body(VALUE data)
 {
 	struct km__rcond2_arg *a = (struct km__rcond2_arg *)data;
 	
-	int n = a->sa->m;
-	km_check_size(1, a->sa->n,n);
+	int n = s2i(a->sa->m);
+	km_check_size(1, s2i(a->sa->n),n);
 	
 	double opt; int lwork=-1, info;
 	char jobz[]="N";
@@ -625,8 +640,8 @@ km__rcondf_body(VALUE data)
 {
 	struct km__rcondf_arg *a = (struct km__rcondf_arg *)data;
 	
-	int n = a->sa->m;
-	km_check_size(1, a->sa->n,n);
+	int n = s2i(a->sa->m);
+	km_check_size(1, s2i(a->sa->n),n);
 	
 	double opt; int lwork=-1, info;
 	dgetri_(&n, NULL, &n, NULL, &opt, &lwork, &info);
@@ -640,7 +655,7 @@ km__rcondf_body(VALUE data)
 	km_check_info(info, km_eUncomp, "the matrix is exactry singular", "dgetrf");
 	dgetri_(&n, a->a, &n, a->ipiv, a->work, &lwork, &info);
 	km_check_info(info, rb_eRuntimeError, "unexpected info value", "dgetri");
-	int len = n*n, ione = 1;
+	const int len = n*n, ione = 1;
 	return rb_float_new(1.0/((a->normf)*dnrm2_(&len, a->a, &ione)));
 }
 static VALUE
@@ -678,8 +693,8 @@ km__rcondoi_body(VALUE data)
 {
 	struct km__rcondoi_arg *a = (struct km__rcondoi_arg *)data;
 	
-	int n = a->sa->m;
-	km_check_size(1, a->sa->n,n);
+	int n = s2i(a->sa->m);
+	km_check_size(1, s2i(a->sa->n),n);
 	
 	KALLOCc(a->a, a->sa);
 	KALLOC(a->iwork, n);
@@ -724,4 +739,3 @@ kmm_mat__rcondoi(VALUE self, VALUE sym)
 	
 	return self;
 }
-

@@ -12,7 +12,7 @@
 #include "lapack_headers/lapacke_utils.h"
 
 #ifndef M_PI
-  #define M_PI 3.14159265358979323846
+#  define M_PI 3.14159265358979323846
 #endif
 #define M_2PI 6.28318530717958647692
 #define COMPLEX double _Complex
@@ -57,7 +57,7 @@ typedef struct {
 		bool **bpbody;
 		VALUE **vpbody;
 	};
-	int ld, m, n;
+	size_t ld, m, n;
 	VTYPE vtype;
 	STYPE stype;
 	bool trans, may_have_sub;
@@ -79,7 +79,7 @@ typedef struct {
 		bool *b;
 		VALUE *v;
 	};
-	int ld;
+	size_t ld;
 	bool need_to_free;
 } LAWORK;
 

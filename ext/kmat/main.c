@@ -24,7 +24,7 @@ VALUE rb_sMath;
 static VALUE
 kmm_obj_value(VALUE self)
 {
-	return INT2NUM((int)self);
+	return LONG2NUM((long)self);
 }
 
 #include "method_definitions.c"
@@ -66,8 +66,8 @@ VALUE
 km_gc_escape(VALUE (*func)(), VALUE data)
 {
 	int status;
-	VALUE old = rb_gc_disable();
-	VALUE ret = rb_protect(func, data, &status);
+	const VALUE old = rb_gc_disable();
+	const VALUE ret = rb_protect(func, data, &status);
 	if ( old == Qfalse ) {
 		rb_gc_enable();
 	}
@@ -85,7 +85,7 @@ VALUE
 km_ensure(VALUE (* b_proc)(ANYARGS), VALUE data1, VALUE (* e_proc)(ANYARGS), VALUE data2)
 {
 	int status;
-	VALUE ret = rb_protect(b_proc, data1, &status);
+	const VALUE ret = rb_protect(b_proc, data1, &status);
 	(*e_proc)(data2);
 	if ( status != 0 ) {
 		rb_jump_tag(status);

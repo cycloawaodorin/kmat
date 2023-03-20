@@ -44,7 +44,7 @@ Mat.new(2, 3){|i, j| i+j} #=> [0, 1, 2; 1, 2, 3]
 ```ruby
 require 'kmat'
 
-a = Mat.ones; b = Mat[[2, 0], [0, 1]]
+a = Mat.ones(2, 2); b = Mat[[2, 0], [0, 1]]
 a+b        #=> [3, 1; 1, 2]
 a-b        #=> [-1, 1; 1, 0]
 a.mprod(b) #=> [2, 1; 2, 1] (matrix product)
@@ -61,14 +61,14 @@ a.sin      # Most of mathematical functions defined in math.h are available as e
 ```ruby
 require 'kmat'
 
-a = Mat.ones; b = Mat[[2, 0], [0, 1]]
+a = Mat.ones(2, 2); b = Mat[[2, 0], [0, 1]]
 a+b; a     #=> [1, 1; 1, 1]
 a.add!(b)
 a          #=> [3, 1; 1, 2]
 c = Mat.new(2, 2)
 c.mprod!(a, b)
 c          #=> [6, 1; 2, 2]
-a.sub!(b); a.e_mul!(b); b.e_div!(a); c.under!(a, b)
+a.sub!(b); a.e_mul!(b); b.e_div!(a); c.under!(b, a)
 ```
 
 ### Numpy-like broadcasting
@@ -76,7 +76,7 @@ a.sub!(b); a.e_mul!(b); b.e_div!(a); c.under!(a, b)
 require 'kmat'
 
 a = Mat.eye(2, 2); b = Mat.range(2)
-a+b                    #=> [1, 1; 2, 2]
+a+b                    #=> [1, 0; 1, 2]
 a.add!(a.broadcast(b)) # For destructive operation, you need to fit shape using Mat#broadcast
 a.s_add!(1.5)          # Or use Mat#s_xxx! for element-wise opertion with broadcasted scalar value
 0.5 * a                # Numeric#* can be used as scalar multiplication (others like Numeric+Mat are not available)
@@ -111,8 +111,8 @@ a[nil, 0] = Mat.range(2) # multi-entry substitution is also available
 a                        #=> [0, 2; 1, 4]
 a.map(&:-@)              #=> [0, -2; -1, -4]
 a.map_with_index!{|e, i, j| e+j}
-a.diag                   #=> [0; 4] (returns diagonal elements as a vector)
-a[]                      #=> [0, 2; 1, 4] (with no argument is equivalent to a[nil, nil])
+a.diag                   #=> [0; 5] (returns diagonal elements as a vector)
+a[]                      #=> [0, 3; 1, 5] (with no argument is equivalent to a[nil, nil])
 Mat.range(3)[2]          #=> 2.0 (with single integer or single integer array is available for vectors)
 ```
 
@@ -128,7 +128,7 @@ The default value type is `:float`. Values are `double` in C language and it is 
 `:int` can be used as row or column index array. Values are `int` in C language, so it is not useful for matrix operations with large integer elements. We recomend to use `:object` with `Integer` for such usage.
 
 #### Bool
-`:bool` can be used as boolean indexing. Logical operations are available. In some operations, elements in boolean matricies behaves as a finite filed with order 2 (`+` is exclusive disjunction and `*` is logical conjunction).
+`:bool` can be used as boolean indexing. Logical operations are available. In some operations, elements in boolean matricies behave as a finite filed with order 2 (`+` is exclusive disjunction and `*` is logical conjunction).
 
 #### Object
 `:object` matricies can contain arbitrary Ruby objects. Operation behaviors are dependent on methods defined for the objects. For example, `Mat#solve` works if `K#==`, `K#quo`, `K#*` and `K#-` are defined appropriately, where `K` is a class of the elements.
@@ -141,7 +141,7 @@ Mat.new(2, 2, :float){|i, j| i+j}
 Mat.new(2, 2, :complex){|i, j| Complex.rect(i, j)}
 Mat.new(2, 2, :int){|i, j| i-j}
 Mat.new(2, 2, :bool){|i, j| i==j}
-Mat.new(2, 2, :object){|i, j| Rational(i, j) }
+Mat.new(2, 2, :object){|i, j| Rational(i, j+1) }
 Mat.new(1, 1).vtype   #=> :float (Mat#vtype returns its value type as a Symbol above)
 ```
 
@@ -158,7 +158,7 @@ b = Mat.range(2)
 Mat.blocks([[a, b], [b, a]]) #=> [3, 2, 1, 0; 5, -3, 7, 1; 0, 3, 2, 1; 1, 5, -3, 7]
 Mat.vstack(a, a); Mat.hstack(a, b)
 a.gt(b)       #=> [true, true, true; true, false, true] (numpy-like broadcasting)
-a.eq(b); a.ne(b); a.ge(b); a.lt(b); a.le(b)
+a.eq(b); a.ge(b); a.lt(b); a.le(b)
 a.max         #=> 7
 a.maximum(b)  #=> [3, 2, 1; 5, 1, 7]
 Mat.maximum(a, b.repmat(1, 3), Mat.randn(2, 3))
@@ -199,9 +199,9 @@ Marshal.load(Marshal.dump(a))
 require 'kmat'
 
 Mat.randn(2, 2, random: Random.new) # In kmat, methods using random value, the generator can be specified by keyword `random'
-$MatRandom = Random.new             # Or substitute into $MatRandom (default value of $MatRandom is Random::DEFAULT)
+$MatRandom = Random.new             # Or substitute into $MatRandom
 Random.new.randn                    # Random#randn returns a random value following N(0, 1)
-randn()                             # Kernel#randn is equivalent to Random::DEFAULT.randn
+randn()                             # Kernel#randn is equivalent to $MatRandom.randn
 ```
 
 

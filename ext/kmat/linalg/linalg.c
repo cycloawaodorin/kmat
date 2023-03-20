@@ -20,6 +20,20 @@ km_check_size(int pairc, ...)
 	}
 	va_end(argp);
 }
+void
+km_check_size_s(int pairc, ...)
+{
+	va_list argp;
+	va_start(argp, pairc);
+	for (int i=0; i<pairc; i++ ) {
+		size_t a = va_arg(argp, size_t); size_t b = va_arg(argp, size_t);
+		if ( a != b ) {
+			va_end(argp);
+			rb_raise(km_eDim, "dimension mismatched (%zu != %zu)", a, b);
+		}
+	}
+	va_end(argp);
+}
 
 // the number of SMATs is specified by `argc'
 // check whether the value types of the arguments are VT_DOUBLE or not
@@ -123,8 +137,8 @@ km_recover_trans(VALUE vab)
 {
 	SMAT *sa = km_mat2smat(rb_ary_entry(vab, 0));
 	SMAT *sb = km_mat2smat(rb_ary_entry(vab, 1));
-	sa->trans = !sa->trans; SWAP(int, sa->m, sa->n);
-	sb->trans = !sb->trans; SWAP(int, sb->m, sb->n);
+	sa->trans = !sa->trans; SWAP(size_t, sa->m, sa->n);
+	sb->trans = !sb->trans; SWAP(size_t, sb->m, sb->n);
 	return vab;
 }
 static VALUE
@@ -174,8 +188,8 @@ kmm_mat_inverse(VALUE va)
 void
 km_dmprod(int m, int n, int k, double *a, int lda, double *b, int ldb, double *r, int ldr)
 {
-	static char trans[] = "N";
-	static double alpha=1.0, beta=0.0;
+	char trans[] = "N";
+	const double alpha=1.0, beta=0.0;
 	dgemm_(trans, trans, &m, &n, &k, &alpha, a, &lda, b, &ldb, &beta, r, &ldr);
 }
 struct km_mprod_arg {
@@ -187,8 +201,8 @@ km_mprod_body(VALUE data)
 {
 	struct km_mprod_arg *a = (struct km_mprod_arg *)data;
 	
-	int m = a->sr->m, n = a->sr->n, k = a->sa->n;
-	km_check_size(3, a->sb->m,k, a->sa->m,m, a->sb->n,n);
+	int m = s2i(a->sr->m), n = s2i(a->sr->n), k = s2i(a->sa->n);
+	km_check_size(3, s2i(a->sb->m),k, s2i(a->sa->m),m, s2i(a->sb->n),n);
 	
 	KALLOCz(a->r, a->sr);
 	KALLOCn(a->a, a->sa);
@@ -198,35 +212,37 @@ km_mprod_body(VALUE data)
 	if ( vt == VT_DOUBLE ) {
 		char trans[] = "N";
 		double alpha=1.0, beta=0.0;
-		dgemm_(trans, trans, &m, &n, &k, &alpha, a->a.d, &(a->a.ld), a->b.d, &(a->b.ld), &beta, a->r.d, &(a->r.ld));
+		int lda=s2i(a->a.ld), ldb=s2i(a->b.ld), ldr=s2i(a->r.ld);
+		dgemm_(trans, trans, &m, &n, &k, &alpha, a->a.d, &lda, a->b.d, &ldb, &beta, a->r.d, &ldr);
 	} else if ( vt == VT_COMPLEX ) {
 		char trans[] = "N";
 		COMPLEX alpha=cpack(1.0, 0.0), beta=cpack(0.0, 0.0);
-		zgemm_(trans, trans, &m, &n, &k, &alpha, a->a.z, &(a->a.ld), a->b.z, &(a->b.ld), &beta, a->r.z, &(a->r.ld));
+		int lda=s2i(a->a.ld), ldb=s2i(a->b.ld), ldr=s2i(a->r.ld);
+		zgemm_(trans, trans, &m, &n, &k, &alpha, a->a.z, &lda, a->b.z, &ldb, &beta, a->r.z, &ldr);
 	} else if ( vt == VT_INT ) {
 		for ( int i=0; i<m; i++ ) { for ( int j=0; j<n; j++ ) {
-			int *foo=(a->r.i)+(i+j*(a->r.ld));
-			int jldb = j*(a->b.ld);
+			int *foo=(a->r.i)+(i+j*s2i(a->r.ld));
+			const int jldb = j*s2i(a->b.ld);
 			for ( int l=0; l<k; l++ ) {
-				*foo += (a->a.i)[i+l*(a->a.ld)] * (a->b.i)[l+jldb];
+				*foo += (a->a.i)[i+l*s2i(a->a.ld)] * (a->b.i)[l+jldb];
 			}
 		} }
 	} else if ( vt == VT_BOOL ) {
 		for ( int i=0; i<m; i++ ) { for ( int j=0; j<n; j++ ) {
-			bool *foo=(a->r.b)+(i+j*(a->r.ld));
-			int jldb = j*(a->b.ld);
+			bool *foo=(a->r.b)+(i+j*s2i(a->r.ld));
+			const int jldb = j*s2i(a->b.ld);
 			for ( int l=0; l<k; l++ ) {
-				bool bar = ( (a->a.b)[i+l*(a->a.ld)] && (a->b.b)[l+jldb] );
+				const bool bar = ( (a->a.b)[i+l*s2i(a->a.ld)] && (a->b.b)[l+jldb] );
 				*foo = XOR(*foo, bar);
 			}
 		} }
 	} else if ( vt == VT_VALUE ) {
 		for ( int i=0; i<m; i++ ) { for ( int j=0; j<n; j++ ) {
-			VALUE *foo=(a->r.v)+(i+j*(a->r.ld));
+			VALUE *foo=(a->r.v)+(i+j*s2i(a->r.ld));
 			*foo = INT2NUM(0);
-			int jldb = j*(a->b.ld);
+			const int jldb = j*s2i(a->b.ld);
 			for ( int l=0; l<k; l++ ) {
-				VALUE bar = rb_funcall( (a->a.v)[i+l*(a->a.ld)], id_op_mul, 1, (a->b.v)[l+jldb] );
+				const VALUE bar = rb_funcall( (a->a.v)[i+l*s2i(a->a.ld)], id_op_mul, 1, (a->b.v)[l+jldb] );
 				*foo = rb_funcall(*foo, id_op_plus, 1, bar);
 			}
 		} }

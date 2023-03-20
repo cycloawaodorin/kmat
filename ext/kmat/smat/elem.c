@@ -59,8 +59,8 @@ COMPLEX
 km_v2c(VALUE obj)
 {
 	VALUE c_obj = rb_funcall(obj, id_to_c, 0);
-	double x = NUM2DBL(rb_funcall(c_obj, id_real, 0));
-	double y = NUM2DBL(rb_funcall(c_obj, id_imag, 0));
+	const double x = NUM2DBL(rb_funcall(c_obj, id_real, 0));
+	const double y = NUM2DBL(rb_funcall(c_obj, id_imag, 0));
 	return cpack(x, y);
 }
 
@@ -74,20 +74,20 @@ km_c2v(COMPLEX c)
 VALUE
 kmm_mat_row_size(VALUE self)
 {
-	return INT2NUM(km_mat2smat(self)->m);
+	return ZU2NUM(km_mat2smat(self)->m);
 }
 
 // alias column_size
 VALUE
 kmm_mat_col_size(VALUE self)
 {
-	return INT2NUM(km_mat2smat(self)->n);
+	return ZU2NUM(km_mat2smat(self)->n);
 }
 
 VALUE
 kmm_mat_length(VALUE self)
 {
-	return INT2NUM(LENGTH(km_mat2smat(self)));
+	return ZU2NUM(LENGTH(km_mat2smat(self)));
 }
 
 // alias size
@@ -95,7 +95,7 @@ VALUE
 kmm_mat_shape(VALUE self)
 {
 	SMAT *smat = km_mat2smat(self);
-	return rb_ary_new3(2, INT2NUM(smat->m), INT2NUM(smat->n));
+	return rb_ary_new3(2, ZU2NUM(smat->m), ZU2NUM(smat->n));
 }
 
 VALUE
@@ -146,7 +146,7 @@ kmm_mat_set_vtype(VALUE self, VALUE vsym)
 VALUE
 kmm_mat_stype(VALUE self)
 {
-	STYPE st = km_mat2smat(self)->stype;
+	const STYPE st = km_mat2smat(self)->stype;
 	if ( st == ST_FULL ) {
 		return sym_full;
 	} else if ( st == ST_SSUB ) {

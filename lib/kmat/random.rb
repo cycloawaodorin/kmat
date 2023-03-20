@@ -78,13 +78,13 @@ class << Random
 		kmat_srand_org(*args)
 	end
 	def randn(*args)
-		Random::DEFAULT.randn(*args)
+		$MatRandom.randn(*args)
 	end
 end
 
 module Kernel
 	module_function def randn(*args)
-		Random::DEFAULT.randn(*args)
+		Random.randn(*args)
 	end
 end
 

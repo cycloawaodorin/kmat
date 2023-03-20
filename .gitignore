@@ -6,10 +6,12 @@
 /pkg/
 /spec/reports/
 /tmp/
+/.vscode/
 *.bundle
 *.so
 *.o
 *.a
 mkmf.log
 Gemfile.lock
+/spec/examples.txt
 test.rb

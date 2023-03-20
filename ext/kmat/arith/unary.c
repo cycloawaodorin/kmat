@@ -123,28 +123,28 @@ VALUE
 kmm_mat_trace(VALUE self)
 {
 	SMAT *smat = km_mat2smat(self);
-	int len = MIN(smat->m, smat->n);
+	const size_t len = MIN(smat->m, smat->n);
 	if ( smat->vtype == VT_DOUBLE ) {
 		double ret = 0.0;
-		for ( int i=0; i<len; i++ ) {
+		for ( size_t i=0; i<len; i++ ) {
 			ret += ENTITY(smat, d, i, i);
 		}
 		return rb_float_new(ret);
 	} else if ( smat->vtype == VT_COMPLEX ) {
 		COMPLEX ret = cpack(0.0, 0.0);
-		for ( int i=0; i<len; i++ ) {
+		for ( size_t i=0; i<len; i++ ) {
 			ret += ENTITY(smat, z, i, i);
 		}
 		return km_c2v(ret);
 	} else if ( smat->vtype == VT_INT ) {
 		int ret = 0;
-		for ( int i=0; i<len; i++ ) {
+		for ( size_t i=0; i<len; i++ ) {
 			ret += ENTITY(smat, i, i, i);
 		}
 		return INT2NUM(ret);
 	} else if ( smat->vtype == VT_BOOL ) {
 		bool ret = false;
-		for ( int i=0; i<len; i++ ) {
+		for ( size_t i=0; i<len; i++ ) {
 			bool ent = ENTITY(smat, b, i, i);
 			ret = XOR(ret, ent);
 		}
@@ -154,7 +154,7 @@ kmm_mat_trace(VALUE self)
 			return INT2NUM(0);
 		} else {
 			VALUE ret = ENTITY(smat, v, 0, 0);
-			for ( int i=1; i<len; i++ ) {
+			for ( size_t i=1; i<len; i++ ) {
 				ret = rb_funcall(ret, id_op_plus, 1, ENTITY(smat, v, i, i));
 			}
 			return ret;

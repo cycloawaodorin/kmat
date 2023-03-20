@@ -35,9 +35,9 @@ km_smat_size(const void *_data)
 		size_t ret = sizeof(SMAT);
 		if ( data->body != NULL ) {
 			if ( data->stype == ST_FULL ) {
-				ret += km_sizeof_vt(data->vtype)*int2size_t(data->m*data->n);
+				ret += km_sizeof_vt(data->vtype)*(data->m*data->n);
 			} else if ( data->stype == ST_RSUB ) {
-				ret += sizeof(void *)*int2size_t(data->m*data->n);
+				ret += sizeof(void *)*(data->m*data->n);
 			}
 		}
 		return ret;
@@ -46,6 +46,22 @@ km_smat_size(const void *_data)
 	}
 }
 
+static void
+km_rb_gc_location_wrap(VALUE *obj, void *null)
+{
+	(*obj) = rb_gc_location(*obj);
+}
+static void
+km_smat_compact(void *_data)
+{
+	SMAT *data = (SMAT *)_data;
+	data->parent = rb_gc_location(data->parent);
+	if ( data->vtype == VT_VALUE && data->body != NULL ) {
+		km_smat_each_v(data, km_rb_gc_location_wrap, NULL);
+	}
+}
+
+
 // functions for allocation
 const rb_data_type_t km_mat_data_type = {
 	"kmat-Mat",
@@ -53,7 +69,8 @@ const rb_data_type_t km_mat_data_type = {
 		km_smat_mark,
 		km_smat_free,
 		km_smat_size,
-		{ (void *)0, (void *)0 }
+		km_smat_compact,
+		{ (void *)0 }
 	},
 	(rb_data_type_t *)0,
 	(void *)0,
@@ -68,9 +85,9 @@ km_Mat_alloc(VALUE klass)
 // calloc a side of SMAT
 // return->body is the argument `body'
 SMAT *
-km_smat_alloc_with(int m, int n, VTYPE vt, void *body)
+km_smat_alloc_with(size_t m, size_t n, VTYPE vt, void *body)
 {
-	km_check_positive(m, n);
+	km_check_size2(m, n);
 	SMAT *data = ZALLOC(SMAT);
 	data->body = body; data->ld = data->m = m; data->n = n;
 	data->vtype = vt; data->stype = ST_FULL; data->trans = false;
@@ -79,19 +96,19 @@ km_smat_alloc_with(int m, int n, VTYPE vt, void *body)
 }
 
 SMAT *
-km_smat_alloc(int m, int n, VTYPE vt)
+km_smat_alloc(size_t m, size_t n, VTYPE vt)
 {
-	km_check_positive(m, n);
-	void *body = ruby_xcalloc(int2size_t(n*m), km_sizeof_vt(vt));
+	km_check_size2(m, n);
+	void *body = ruby_xcalloc(n*m, km_sizeof_vt(vt));
 	return km_smat_alloc_with(m, n, vt, body);
 }
 
 // calloc a SMAT of (m, n)-matrix
 // return->body will be calloc-ed
 void
-km_smat_alloc_body(SMAT *data, int m, int n, VTYPE vt)
+km_smat_alloc_body(SMAT *data, size_t m, size_t n, VTYPE vt)
 {
-	km_check_positive(m, n);
+	km_check_size2(m, n);
 	if ( data->stype != ST_FULL ) {
 		rb_raise(km_eShare, "can't re-alloc submatrix body");
 	} else if ( km_smat_have_submatrix_p(data) ) {
@@ -99,12 +116,12 @@ km_smat_alloc_body(SMAT *data, int m, int n, VTYPE vt)
 	}
 	data->ld = data->m = m; data->n = n; data->vtype = vt; data->stype = ST_FULL;
 	ruby_xfree(data->body);
-	data->body = ruby_xcalloc(int2size_t(n*m), km_sizeof_vt(vt));
+	data->body = ruby_xcalloc(n*m, km_sizeof_vt(vt));
 }
 void
-km_smat_alloc_pbody(SMAT *data, int m, int n, VTYPE vt)
+km_smat_alloc_pbody(SMAT *data, size_t m, size_t n, VTYPE vt)
 {
-	km_check_positive(m, n);
+	km_check_size2(m, n);
 	if ( data->stype != ST_FULL ) {
 		rb_raise(km_eShare, "can't re-alloc submatrix body");
 	} else if ( km_smat_have_submatrix_p(data) ) {
@@ -112,7 +129,7 @@ km_smat_alloc_pbody(SMAT *data, int m, int n, VTYPE vt)
 	}
 	data->ld = data->m = m; data->n = n; data->vtype = vt; data->stype = ST_RSUB;
 	ruby_xfree(data->body);
-	data->body = ruby_xcalloc(int2size_t(n*m), sizeof(void*));
+	data->body = ruby_xcalloc(n*m, sizeof(void*));
 }
 
 
@@ -152,7 +169,7 @@ km_smat_copy(SMAT *dest, const SMAT *src)
 				rb_raise(km_eShare, "can't copy to value-type mismatched or dimension mismatched submatrix");
 			}
 			ruby_xfree(dest->body);
-			dest->body = ruby_xcalloc(LENGTHs(src), km_sizeof_vt(src->vtype));
+			dest->body = ruby_xcalloc(LENGTH(src), km_sizeof_vt(src->vtype));
 			dest->ld = src->m; dest->vtype = src->vtype;
 		} else if ( dest->m != src->m ) { // need not to resize but reshape is needed
 			if ( dest->stype != ST_FULL ) { // the destination must not be a submatrix
@@ -163,7 +180,7 @@ km_smat_copy(SMAT *dest, const SMAT *src)
 		dest->m = src->m; dest->n = src->n;
 		if ( dest->stype==ST_FULL && src->stype==ST_FULL ) {
 			dest->ld = src->ld; dest->trans = src->trans;
-			memcpy(dest->body, src->body, km_sizeof_vt(src->vtype)*LENGTHs(src));
+			memcpy(dest->body, src->body, km_sizeof_vt(src->vtype)*LENGTH(src));
 		} else {
 			VT_SWITCH( dest->vtype,
 				km_smat_each2_dcd(dest, src, km_smat_copy_d, NULL);,
@@ -189,15 +206,15 @@ kmm_mat_marshal_dump(VALUE self)
 	if ( smat->stype != ST_FULL ) {
 		smat = km_mat2smat(rb_obj_dup(self));
 	}
-	VALUE headder = rb_str_new((char *)&(smat->vtype), sizeof(VTYPE));
+	VALUE headder = rb_str_new((char *)&(smat->vtype), s2l(sizeof(VTYPE)));
 	VALUE body;
 	if ( smat->vtype == VT_VALUE ) {
 		body = kmm_mat_to_ary(self);
 	} else {
-		rb_str_cat(headder, (char *)&(smat->m), sizeof(int));
-		rb_str_cat(headder, (char *)&(smat->n), sizeof(int));
+		rb_str_cat(headder, (char *)&(smat->m), sizeof(size_t));
+		rb_str_cat(headder, (char *)&(smat->n), sizeof(size_t));
 		rb_str_cat(headder, (char *)&(smat->trans), sizeof(bool));
-		body = rb_str_new((char *)(smat->body), (long)km_sizeof_vt(smat->vtype)*LENGTH(smat));
+		body = rb_str_new((char *)(smat->body), s2l(km_sizeof_vt(smat->vtype)*LENGTH(smat)));
 	}
 	return rb_ary_new3(2, headder, body);
 }
@@ -212,13 +229,13 @@ kmm_mat_marshal_load(VALUE self, VALUE dump)
 		km_smat_copy(smat, km_mat2smat(kmm_ary_to_omat(body)));
 	} else {
 		hptr += sizeof(VTYPE);
-		int m, n; bool t;
-		memcpy(&m, hptr, sizeof(int)); hptr += sizeof(int);
-		memcpy(&n, hptr, sizeof(int)); hptr += sizeof(int);
+		size_t m, n; bool t;
+		memcpy(&m, hptr, sizeof(size_t)); hptr += sizeof(size_t);
+		memcpy(&n, hptr, sizeof(size_t)); hptr += sizeof(size_t);
 		memcpy(&t, hptr, sizeof(bool)); hptr += sizeof(bool);
 		km_smat_alloc_body(smat, m, n, smat->vtype);
 		smat->trans = t;
-		size_t sb = km_sizeof_vt(smat->vtype)*LENGTHs(smat);
+		size_t sb = km_sizeof_vt(smat->vtype)*LENGTH(smat);
 		if ( RSTRING_LEN(body) != (long)sb ) {
 			rb_raise(rb_eArgError, "wrong object given");
 		}
@@ -233,21 +250,21 @@ km_smat_each_##id(SMAT *smat, void (*func)(type *, void *), void *data) \
 { \
 	if ( smat->stype == ST_RSUB ) { \
 		if ( smat->trans ) { \
-			for ( int i=0; i<smat->m; i++ ) { for ( int j=0; j<smat->n; j++ ) { \
+			for ( size_t i=0; i<smat->m; i++ ) { for ( size_t j=0; j<smat->n; j++ ) { \
 				func(smat->id##pbody[j+i*(smat->ld)], data); \
 			} } \
 		} else { \
-			for ( int i=0; i<smat->m; i++ ) { for ( int j=0; j<smat->n; j++ ) { \
+			for ( size_t i=0; i<smat->m; i++ ) { for ( size_t j=0; j<smat->n; j++ ) { \
 				func(smat->id##pbody[i+j*(smat->ld)], data); \
 			} } \
 		} \
 	} else { \
 		if ( smat->trans ) { \
-			for ( int i=0; i<smat->m; i++ ) { for ( int j=0; j<smat->n; j++ ) { \
+			for ( size_t i=0; i<smat->m; i++ ) { for ( size_t j=0; j<smat->n; j++ ) { \
 				func(&(smat->id##body[j+i*(smat->ld)]), data); \
 			} } \
 		} else { \
-			for ( int i=0; i<smat->m; i++ ) { for ( int j=0; j<smat->n; j++ ) { \
+			for ( size_t i=0; i<smat->m; i++ ) { for ( size_t j=0; j<smat->n; j++ ) { \
 				func(&(smat->id##body[i+j*(smat->ld)]), data); \
 			} } \
 		} \
@@ -261,25 +278,25 @@ DEFINE_KM_SMAT_EACH_ID(v, VALUE)
 
 // call `func'(&element, `data', i, j) for each elements of `smat'
 #define DEFINE_KM_SMAT_EACH_WI_ID(id, type) void \
-km_smat_each_with_index_##id(SMAT *smat, void (*func)(type *, int, int, void *), void *data) \
+km_smat_each_with_index_##id(SMAT *smat, void (*func)(type *, size_t, size_t, void *), void *data) \
 { \
 	if ( smat->stype == ST_RSUB ) { \
 		if ( smat->trans ) { \
-			for ( int i=0; i<smat->m; i++ ) { for ( int j=0; j<smat->n; j++ ) { \
+			for ( size_t i=0; i<smat->m; i++ ) { for ( size_t j=0; j<smat->n; j++ ) { \
 				func(smat->id##pbody[j+i*(smat->ld)], i, j, data); \
 			} } \
 		} else { \
-			for ( int i=0; i<smat->m; i++ ) { for ( int j=0; j<smat->n; j++ ) { \
+			for ( size_t i=0; i<smat->m; i++ ) { for ( size_t j=0; j<smat->n; j++ ) { \
 				func(smat->id##pbody[i+j*(smat->ld)], i, j, data); \
 			} } \
 		} \
 	} else { \
 		if ( smat->trans ) { \
-			for ( int i=0; i<smat->m; i++ ) { for ( int j=0; j<smat->n; j++ ) { \
+			for ( size_t i=0; i<smat->m; i++ ) { for ( size_t j=0; j<smat->n; j++ ) { \
 				func(&(smat->id##body[j+i*(smat->ld)]), i, j, data); \
 			} } \
 		} else { \
-			for ( int i=0; i<smat->m; i++ ) { for ( int j=0; j<smat->n; j++ ) { \
+			for ( size_t i=0; i<smat->m; i++ ) { for ( size_t j=0; j<smat->n; j++ ) { \
 				func(&(smat->id##body[i+j*(smat->ld)]), i, j, data); \
 			} } \
 		} \
@@ -296,21 +313,21 @@ DEFINE_KM_SMAT_EACH_WI_ID(v, VALUE)
 // SEGV will occur if `sb' is smaller than `sa'
 #define KM_SMAT_EACH2_BLOOP(elma, id) if ( sb->stype == ST_RSUB ) { \
 	if ( sb->trans ) { \
-		for ( int i=0; i<sa->m; i++ ) { for ( int j=0; j<sa->n; j++ ) { \
+		for ( size_t i=0; i<sa->m; i++ ) { for ( size_t j=0; j<sa->n; j++ ) { \
 			func(elma, sb->id##pbody[j+i*(sb->ld)], data); \
 		} } \
 	} else { \
-		for ( int i=0; i<sa->m; i++ ) { for ( int j=0; j<sa->n; j++ ) { \
+		for ( size_t i=0; i<sa->m; i++ ) { for ( size_t j=0; j<sa->n; j++ ) { \
 			func(elma, sb->id##pbody[i+j*(sb->ld)], data); \
 		} } \
 	} \
 } else { \
 	if ( sb->trans ) { \
-		for ( int i=0; i<sa->m; i++ ) { for ( int j=0; j<sa->n; j++ ) { \
+		for ( size_t i=0; i<sa->m; i++ ) { for ( size_t j=0; j<sa->n; j++ ) { \
 			func(elma, &(sb->id##body[j+i*(sb->ld)]), data); \
 		} } \
 	} else { \
-		for ( int i=0; i<sa->m; i++ ) { for ( int j=0; j<sa->n; j++ ) { \
+		for ( size_t i=0; i<sa->m; i++ ) { for ( size_t j=0; j<sa->n; j++ ) { \
 			func(elma, &(sb->id##body[i+j*(sb->ld)]), data); \
 		} } \
 	} \
@@ -370,21 +387,21 @@ DEFINE_KM_SMAT_EACH2_ID_CONST_ID(d, double, z, COMPLEX)
 // SEGV will occur if `sb' or `sc' is smaller than `sa'
 #define KM_SMAT_EACH3_CLOOP(elma, elmb, id) if ( sc->stype == ST_RSUB ) { \
 	if ( sc->trans ) { \
-		for ( int i=0; i<sa->m; i++ ) { for ( int j=0; j<sa->n; j++ ) { \
+		for ( size_t i=0; i<sa->m; i++ ) { for ( size_t j=0; j<sa->n; j++ ) { \
 			func(elma, elmb, sc->id##pbody[j+i*(sc->ld)], data); \
 		} } \
 	} else { \
-		for ( int i=0; i<sa->m; i++ ) { for ( int j=0; j<sa->n; j++ ) { \
+		for ( size_t i=0; i<sa->m; i++ ) { for ( size_t j=0; j<sa->n; j++ ) { \
 			func(elma, elmb, sc->id##pbody[i+j*(sc->ld)], data); \
 		} } \
 	} \
 } else { \
 	if ( sc->trans ) { \
-		for ( int i=0; i<sa->m; i++ ) { for ( int j=0; j<sa->n; j++ ) { \
+		for ( size_t i=0; i<sa->m; i++ ) { for ( size_t j=0; j<sa->n; j++ ) { \
 			func(elma, elmb, &(sc->id##body[j+i*(sc->ld)]), data); \
 		} } \
 	} else { \
-		for ( int i=0; i<sa->m; i++ ) { for ( int j=0; j<sa->n; j++ ) { \
+		for ( size_t i=0; i<sa->m; i++ ) { for ( size_t j=0; j<sa->n; j++ ) { \
 			func(elma, elmb, &(sc->id##body[i+j*(sc->ld)]), data); \
 		} } \
 	} \
@@ -527,4 +544,3 @@ km_smat_each3_bcvcv(SMAT *sa, const SMAT *sb, const SMAT *sc, void (*func)(bool 
 		}
 	}
 }
-
