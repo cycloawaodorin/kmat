@@ -199,9 +199,9 @@ Marshal.load(Marshal.dump(a))
 require 'kmat'
 
 Mat.randn(2, 2, random: Random.new) # In kmat, methods using random value, the generator can be specified by keyword `random'
-$MatRandom = Random.new             # Or substitute into $MatRandom
+Mat.random = Random.new             # Or substitute the class variable
 Random.new.randn                    # Random#randn returns a random value following N(0, 1)
-randn()                             # Kernel#randn is equivalent to $MatRandom.randn
+randn()                             # Kernel#randn is equivalent to Mat.random.randn
 ```
 
 

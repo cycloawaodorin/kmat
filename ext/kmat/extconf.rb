@@ -15,7 +15,6 @@ end
 $CFLAGS = "$(cflags) -std=c11"
 $CFLAGS += " -m64" if mkl
 
-#$warnflags = "-Wall -Wextra -Wdeprecated-declarations -Wimplicit-function-declaration -Wimplicit-int -Wpointer-arith -Wwrite-strings -Wmissing-noreturn -Wno-unused-parameter -Wsuggest-attribute=format -Wsuggest-attribute=noreturn -Wunused-variable -Wno-maybe-uninitialized -Winit-self -Wshadow"
 $warnflags = "-Wall -Wextra -Wdeprecated-declarations -Wimplicit-function-declaration -Wimplicit-int -Wpointer-arith -Wwrite-strings -Wmissing-noreturn -Wno-unused-parameter -Wsuggest-attribute=format -Wsuggest-attribute=noreturn -Wunused-variable -Winit-self -Wshadow -Wlogical-op -Wconversion"
 
 $DLDFLAGS += " -Wl,-Bsymbolic -fPIC"

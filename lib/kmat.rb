@@ -2,6 +2,13 @@ require_relative "./kmat/version"
 
 class Mat
 	include Enumerable
+	@@random = Random.new
+	def self.random
+		@@random
+	end
+	def self.random=(other)
+		@@random = _set_random(other)
+	end
 end
 
 class << Mat

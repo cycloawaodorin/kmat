@@ -41,6 +41,7 @@ op_pow **
 op_uminus -@
 quo
 rand
+random
 real
 to_c
 to_s

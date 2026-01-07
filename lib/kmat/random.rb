@@ -78,7 +78,7 @@ class << Random
 		kmat_srand_org(*args)
 	end
 	def randn(*args)
-		$MatRandom.randn(*args)
+		Mat.random.randn(*args)
 	end
 end
 
@@ -89,18 +89,18 @@ module Kernel
 end
 
 class Mat
-	def rand(arg=nil, random: $MatRandom)
+	def rand(arg=nil, random: @@random)
 		_rand0(random, arg)
 	end
-	def randn(random: $MatRandom)
+	def randn(random: @@random)
 		_randn0(random)
 	end
 end
 class << Mat
-	def rand(m=1, n=1, random: $MatRandom)
+	def rand(m=1, n=1, random: self.random)
 		_rand0(m, n, random)
 	end
-	def randn(m=1, n=1, random: $MatRandom)
+	def randn(m=1, n=1, random: self.random)
 		_randn0(m, n, random)
 	end
 end
