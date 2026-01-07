@@ -63,10 +63,20 @@ km_random_randn(int argc, VALUE *argv, VALUE random)
 	}
 }
 
+VALUE
+kmm_Mat__set_random(VALUE self, VALUE other)
+{
+	if ( rb_obj_is_kind_of(other, rb_cRandom) ) {
+		kmgv_mat_random = other;
+		return kmgv_mat_random;
+	} else {
+		rb_raise(rb_eTypeError, "the argument must be an Random, not %s", rb_obj_classname(other));
+	}
+}
+
 void
 km_Mat_rand_init(void)
 {
-	kmgv_mat_random = rb_funcall(rb_cRandom, id_new, 0);
-	rb_define_variable("$MatRandom", &kmgv_mat_random);
+	kmgv_mat_random = rb_funcall(km_cMat, id_random, 0);
 	rb_define_method(rb_cRandom, "randn", km_random_randn, -1);
 }
