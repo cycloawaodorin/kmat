@@ -2,7 +2,7 @@ class Mat
 	# to define Numeric * Mat as Mat#scalar(Numeric) remaining Mat * Mat is undefined,
 	# this returns non‐standard value
 	def coerce(other)
-		if caller.first[/`([^']*)'/, 1] == '*'
+		if caller.first[/[`#]([^']*)'/, 1] == '*'
 			[self, other]
 		else
 			raise TypeError, "Mat can't be coerced into #{other.class}"
