@@ -12,7 +12,7 @@ Linear algebra methods used with transposed output matricies were affected.
 - Added some normalizing methods: `Mat#normalize/!`, `Mat#geo_normalize/!` and `Mat#svd_symmetrize/!`.
 
 ## 0.0.3 2019/12/03
-- Fix a bug in {Mat#geo_normalize{.
+- Fix a bug in `Mat#geo_normalize`.
 
 ## 0.1.0 2022/03/20
 - Conformed newer Ruby regulations.
@@ -28,3 +28,6 @@ Linear algebra methods used with transposed output matricies were affected.
 - Deprecate the global variable `$MatRandom`.
 	- It is replaced by a class variable `@@random` under the `Mat` class.
 	- The class variable can be obtained by `Mat.random` and can be substituted by `Mat.random=(new_random_instance)`.
+
+## 0.1.2 2026/01/08
+- Fixed a bug that `Numeric#*(Mat)` raised TypeError on Ruby 3.4 or later.
