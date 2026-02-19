@@ -63,10 +63,10 @@ class Mat
 		Mat.new(self.col_size, 1, :f).wls!(self, b, w)
 	end
 	
-	def rand_orth(random: @@andom)
+	def rand_orth(random: @@random)
 		_rand_orth(random)
 	end
-	def self.rand_orth(n, random: @@andom)
+	def self.rand_orth(n, random: @@random)
 		Mat.new(n, n, :float).rand_orth(random: random)
 	end
 	

@@ -31,3 +31,6 @@ Linear algebra methods used with transposed output matricies were affected.
 
 ## 0.1.2 2026/01/08
 - Fixed a bug that `Numeric#*(Mat)` raised TypeError on Ruby 3.4 or later.
+
+## 0.1.3 2026/02/19
+- Fixed a bug that there were typos in `Mat#rand_orth`
