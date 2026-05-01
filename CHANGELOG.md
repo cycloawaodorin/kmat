@@ -34,3 +34,6 @@ Linear algebra methods used with transposed output matricies were affected.
 
 ## 0.1.3 2026/02/19
 - Fixed a bug that there were typos in `Mat#rand_orth`
+
+## 0.1.4 2026/05/01
+- Cumulative coding amendment.
