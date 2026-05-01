@@ -1,4 +1,3 @@
-
 class MethodDefinition
 	def initialize(name_arg, comment)
 		comment = %r|//\s+(.*)|.match(comment)[1]
